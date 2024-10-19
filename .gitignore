@@ -6,7 +6,9 @@ testspace/*
 *.dump
 *.data
 fpga/fpga
-./testcase
-./script
-./fpga
-./README.md
+
+README.md
+fpga/
+script/
+testcase/
+testspace/
