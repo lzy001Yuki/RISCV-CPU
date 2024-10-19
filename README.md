@@ -1,6 +1,6 @@
 # RISCV-CPU
 
-This project accomplish CPU design supporting RISCV-32.
+This project accomplished CPU design supporting RISCV-32.
 
 references:
 
