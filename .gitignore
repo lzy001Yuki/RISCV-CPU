@@ -7,7 +7,6 @@ testspace/*
 *.data
 fpga/fpga
 
-README.md
 fpga/
 script/
 testcase/
