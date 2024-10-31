@@ -7,15 +7,16 @@ module ifetch(
 
     input wire cache_rdy,
     input wire[`INST_WIDTH - 1 : 0] inst_in,
-    input wire[`ADDR_WIDTH - 1 : 0] dec2if, // get next PC from decoder
-    input wire robFlush, // for branch prediction
-    input wire decFlush, // for branch prediction
+    input wire[`ADDR_WIDTH - 1 : 0] alu2if, // get next PC from alu
     input wire[`ADDR_WIDTH - 1 : 0] rob2if, // get next PC from rob
-
+    input wire[`ADDR_WIDTH - 1 : 0] dec2if, // get next PC from decoder
+    input wire alu2if_cont,
+    input wire flush,
+    input wire decUpd,
 
     output wire if2dec, // enable decode operation
     output wire[`INST_WIDTH - 1 : 0] inst_out,
-    output wire[`ADDR_WIDTH - 1 : 0] pc_out, // to decode
+    output wire[`ADDR_WIDTH - 1 : 0] pc_out, // to decode & predictor
     output wire[`ADDR_WIDTH - 1 : 0] next_PC, // to cache
     output wire next_inst // to cache
 );
@@ -35,13 +36,16 @@ always @(posedge clk) begin
     else if (!rdy_in) begin
         // do nothing
     end
-    else if (robFlush || (if_stall && decFlush)) begin
-        // wait for next inst because of branch
-        if (robFlush) begin
+    else if (flush || (if_stall && alu2if_cont) || (if_stall && decUpd)) begin
+        // wait for next inst because of branch/flush
+        if (flush) begin
             reg_next_PC <= rob2if;
         end
-        else if (decFlush) begin
-            reg_next_PC <= dec2if;
+        else if (alu2if_cont) begin
+            reg_next_PC <= alu2if;
+        end
+        else if (decUpd) begin
+            reg_next_pc <= dec2if;
         end
         if_stall <= 0;
         reg_inst_out <= 0;
@@ -51,21 +55,12 @@ always @(posedge clk) begin
     else if (!if_stall && cache_rdy) begin
         reg_if2dec <= 1;
         reg_inst_out <= inst_in;
-        if (robFlush) begin
-            reg_next_PC <= rob2if;
-        end
-        else if (decFlush) begin
-            reg_next_PC <= dec2if;
-        end
-        else begin
-            reg_next_PC <= reg_next_PC + 4;
-        end
+        reg_next_PC <= reg_next_PC + 4;
         reg_pc_out <= reg_next_PC;
-        case (inst_in[`OP_WIDTH - 1 : 0])
-            `OP_B_TYPE, `OP_JALR, `OP_JAL: begin
-                if_stall <= 1;
-            end
-        endcase
+    
+        if (inst_in[6 : 4] == `OP_B_TYPE) begin
+            if_stall <= 1;
+        end
     end
 end
 

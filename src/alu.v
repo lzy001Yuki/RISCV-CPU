@@ -9,24 +9,37 @@ module alu(
     input wire [`VAL_WIDTH - 1 : 0] val1, 
     input wire [`VAL_WIDTH - 1 : 0] val2,
     input wire [`ID_WIDTH - 1 : 0] entry,
+    input wire [`ADDR_WIDTH - 1 : 0] nowPC,
 
-    // connect to cdb & rob
+    // connect to rs & rob
     output wire aluReady,
     output wire [`ID_WIDTH - 1 : 0] entry_out,
-    output wire [`VAL_WIDTH - 1 : 0] val_out
+    output wire [`VAL_WIDTH - 1 : 0] val_out,
+
+    // to ifetch
+    output wire [`ADDR_WIDTH - 1 : 0] alu2if_pc.
+    output wire alu2if_con
 );
 
-assign entry_out = entry;
+reg [`ID_WIDTH - 1 : 0] reg_entry;
 reg [`VAL_WIDTH - 1 : 0] val_out_reg;
 reg ready;
 reg [2 : 0] typeSign;
 reg [2 : 0] funcSign;
 reg otherSign;
+reg [`ADDR_WIDTH - 1 : 0] PC;
+reg cont;
 
 always @(posedge clk) begin
     if (rst_in) begin
         ready <= 0;
         val_out_reg <= 0;
+        reg_entry <= 0;
+        typeSign <= 0;
+        funcSign <= 0;
+        otherSign <= 0;
+        PC <= 0;
+        cont <= 0;
     end
     else if (!rdy_in) begin
         // do nothing
@@ -37,6 +50,8 @@ always @(posedge clk) begin
         typeSign = type[2 : 0];
         funcSign = type[5 : 3];
         otherSign = type[6];
+        reg_entry <= entry;
+        cont <= 0;
         case (typeSign)
             `OP_B_TYPE:begin
                 case (funcSign)
@@ -51,7 +66,11 @@ always @(posedge clk) begin
                             1'b1: val_out_reg <= val1 + val2; //jal
                         endcase
                     end
-                    3'b011: val_out_reg <= (val1 + val2) & 32'hfffffffe; //jalr
+                    3'b011: begin
+                        PC <= (val1 + val2) & 32'hfffffffe; //jalr
+                        val_out_reg <= nowPC;
+                        cont <= 1;
+                    end
                 endcase
             end
             `OP_I_TYPE: begin
@@ -115,4 +134,7 @@ end
 
 assign aluReady = ready;
 assign val_out = val_out_reg;
+assign entry_out = reg_entry;
+assign alu2if_cont = cont;
+assign alu2if_pc = PC;
 endmodule

@@ -35,6 +35,9 @@ module reservationStation(
 
     // connect to alu
     output wire execute,
+    input wire aluReady,
+    input wire[`ID_WIDTH - 1 : 0] entry_in, 
+    input wire[`VAL_WIDTH - 1 : 0] val_in,
 
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
     output wire[`ID_WIDTH - 1 : 0] lab2cdb,
@@ -50,6 +53,8 @@ reg [`VAL_WIDTH - 1 : 0] Q2 [0 : `RS_SIZE - 1];
 reg [`OP_WIDTH - 1 : 0] orderType [0 : `RS_SIZE - 1];
 reg [`RS_ID_WIDTH : 0] issue_id;
 reg [`RS_ID_WIDTH : 0] exe_id;
+reg[`ID_WIDTH - 1 : 0] reg_entry_in;
+reg[`VAL_WIDTH - 1 : 0] reg_val_in;
 reg rsFull;
 reg reg_execute;
 
@@ -158,6 +163,11 @@ always @(posedge clk) begin
                 end
             end
         end
+        // write
+        if (aluReady) begin
+            reg_entry_in <= entry_in;
+            reg_val_in <= val_in;
+        end
     end
 end
 
@@ -173,13 +183,14 @@ alu alu(
     .val2(V2[exe_id]),
     .entry(entry[exe_id]),
 
-    .aluReady(cdbReady),
-    .entry_out(lab2cdb),
-    .val_out(val2cdb)
+    .aluReady(aluReady),
+    .entry_out(entry_in),
+    .val_out(val_in)
 );
 
 assign rs_issue_id = issue_id;
-assign noLab = (type == `OP_AUIPC || type == `OP_JAL || type == `OP_LUI);
+assign val2cdb = aluReady ? reg_val_in : 0;
+assign lab2cdb = aluReady ? reg_entry_in : 0;
 
 
 endmodule

@@ -58,7 +58,7 @@ module reorderBuffer(
     output wire [`ADDR_WIDTH - 1 : 0] rob2pre_curPC,
     output wire update,
 
-    // to PC
+    // to ifetch
     output wire [`ADDR_WIDTH - 1 : 0] newPC,
 
     output wire flush_out

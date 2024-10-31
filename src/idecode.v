@@ -5,34 +5,43 @@ module decode(
     input wire rdy_in,
     // from ifetch
     input wire if2dec,
-    input wire [`ADDR_WIDTH - 1 : 0] pc_out,
+    input wire flush,
+    input wire [`ADDR_WIDTH - 1 : 0] pc_in,
     input wire [`INST_WIDTH - 1 : 0] inst_in,
-    output wire decFlush,
-    output wire [`ADDR_WIDTH - 1 : 0] dec2if,
+    // from predictor
+    input wire pred,
     output wire [`OP_WIDTH - 1 : 0] orderType,
     output wire [`REG_WIDTH - 1 : 0] dec_rd,
     output wire [`REG_WIDTH - 1 : 0] dec_rs1,
     output wire [`REG_WIDTH - 1 : 0] dec_rs2,
-    output wire [`VAL_WIDTH - 1 : 0] dec_imm
+    output wire [`VAL_WIDTH - 1 : 0] dec_imm,
+    output wire decUpd,
+    output wire [`ADDR_WIDTH - 1 : 0] dec2if_pc
 );
 
 reg [`OP_WIDTH - 1 : 0] opcode;
 reg [`FUNCT3_WIDTH - 1 : 0] funct3;
 reg [`FUNCT7_WIDTH - 1 : 0] funct7;
 
-reg reg_decFlush;
-reg [`ADDR_WIDTH - 1 : 0] reg_dec2if;
-reg [`OP_WIDTH - 1 : 0] reg_orderType,
-reg [`REG_WIDTH - 1 : 0] reg_dec_rd,
-reg [`REG_WIDTH - 1 : 0] reg_dec_rs1,
-reg [`REG_WIDTH - 1 : 0] reg_dec_rs2,
+reg [`OP_WIDTH - 1 : 0] reg_orderType;
+reg [`REG_WIDTH - 1 : 0] reg_dec_rd;
+reg [`REG_WIDTH - 1 : 0] reg_dec_rs1;
+reg [`REG_WIDTH - 1 : 0] reg_dec_rs2;
 reg [`VAL_WIDTH - 1 : 0] reg_dec_imm;
+reg [`ADDR_WIDTH - 1 : 0] reg_dec2if_pc;
 
 
 always @(posedge clk) begin
-    if (rst_in) begin
+    if (rst_in || flush) begin
         // initialize
-        reg_decFlush <= 0;
+        reg_orderType <= 0;
+        reg_dec_rs1 <= 0;
+        reg_dec_rs2 <= 0;
+        reg_dec_rd <= 0;
+        reg_dec_imm <= 0;
+        funct3 <= 0;
+        funct7 <= 0;
+        opcode <= 0;
     end
     else if (!rdy_in) begin
         // do nothing
@@ -42,6 +51,7 @@ always @(posedge clk) begin
         reg_dec_rd <= 0;
         reg_dec_rs1 <= 0;
         reg_dec_rs2 <= 0;
+        reg_dec2if_pc <= 0;
         if (opcode == `OP_AUIPC) begin
             reg_dec_imm <= {inst_in[31 : 12], 12'b0};
             reg_orderType <= opcode;
@@ -56,9 +66,10 @@ always @(posedge clk) begin
             reg_dec_imm <=  {{12{inst_in[31]}}, inst_in[19:12], inst_in[20], inst_in[30:21], 1'b0};
             reg_orderType <= opcode;
             reg_dec_rd <= inst_in[11 : 7];
+            reg_dec2if_pc <= pc_in + reg_dec_imm;
         end
         else if (opcode == `OP_JALR) begin
-            reg_dec_imm <= {{21{inst_in[31]}}, inst_in[30:20]}) & 32'b11111111111111111111111111111110;
+            reg_dec_imm <= {{21{inst_in[31]}}, inst_in[30:20]} & 32'b11111111111111111111111111111110;
             reg_orderType <= opcode;
             reg_dec_rd <= inst_in[11 : 7];
             reg_dec_rs1 <= inst_in[19 : 15];
@@ -163,6 +174,12 @@ always @(posedge clk) begin
                     funct3 <= inst_in[14 : 12];
                     reg_orderType <= {opcode[6 : 4], funct3, 1'b0};
                     reg_dec_imm <= {{20{inst_in[31]}}, inst_in[7], inst_in[30 : 25], inst_in[11 : 8], 1'b0};
+                    if (pred) begin
+                        reg_dec2if_pc <= pc_in + reg_dec_imm;
+                    end
+                    else begin
+                        reg_dec2if_pc <= pc_in + 4;
+                    end
                 end
             endcase
         end
@@ -170,10 +187,12 @@ always @(posedge clk) begin
     end
 end
 
-assign decFlush = reg_decFlush;
 assign orderType = reg_orderType;
 assign dec_rd = reg_dec_rd;
 assign dec_rs1 = reg_dec_rs1;
 assign dec_rs2 = reg_dec_rs2;                                         
 assign dec_imm = reg_dec_imm;
+assign decUpd = reg_dec2if_pc ? 1 : 0;
+assign dec2if_pc = reg_dec2if_pc;
 endmodule
+
