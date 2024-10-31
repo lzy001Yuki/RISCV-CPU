@@ -114,7 +114,7 @@ always @(posedge clk) begin
                 V1[issue_id] <= 4;
                 V2[issue_id] <= nowPC;
             end
-            else if (type[2 : 0] == `OP_I_TYPE && type != `OP_AUIPC) begin
+            else if (type[2 : 0] == `OP_I_TYPE) begin
                 V2[issue_id] <= imm;
                 Q2[issue_id] <= 0;
             end

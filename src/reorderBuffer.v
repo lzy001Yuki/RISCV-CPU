@@ -7,8 +7,6 @@ module reorderBuffer(
 
     input wire [`ADDR_WIDTH - 1 : 0] curPC,
 
-    input wire flush,
-
     // from decoder
     input wire isJump,
     input wire [`OP_WIDTH - 1 : 0] inst,
@@ -92,7 +90,7 @@ reg [`ID_WIDTH - 1 : 0] reg_lab2idx;
 integer i;
 
 always @(posedge clk) begin
-    if (rst_in || (flush && rdy_in)) begin
+    if (rst_in || (reg_flush && rdy_in)) begin
         tag <= 0;
         head <= 0;
         tail <= 0;
@@ -179,8 +177,8 @@ assign commit_lab = reg_commit_lab;
 assign lab2idx = reg_lab2idx;
 assign label1 = rf_label1;
 assign label2 = rf_label2;
-assign res1 = res[rf_label1];
-assign res2 = res[rf_label2];
-assign ready1 = rf_label1 ? ready[rf_label1] : rf_val1;
-assign ready2 = rf_label2 ? ready[rf_label2] : rf_val2;
+assign res1 = rf_label1 ? res[rf_label1] : rf_val1;
+assign res2 = rf_label2 ? res[rf_label2] : rf_val2;
+assign ready1 = ready[rf_label1];
+assign ready2 = ready[rf_label2];
 endmodule
