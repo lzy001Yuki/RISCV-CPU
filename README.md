@@ -3,7 +3,7 @@
 This project accomplished CPU design supporting RISCV-32.
 
 ## About Overall Design
-<img src="figures/myTomasulo.jpg" width="500" align=center />
+<img src="figures/myTomasulo.png" width="500" align=center />
 
 references:
 
