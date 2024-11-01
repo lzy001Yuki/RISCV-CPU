@@ -56,7 +56,7 @@ module reorderBuffer(
     // to predictor
     output wire pred_res,
     output wire [`ADDR_WIDTH - 1 : 0] rob2pre_curPC,
-    output wire update,
+    output wire rob2pred_en,
 
     // to ifetch
     output wire [`ADDR_WIDTH - 1 : 0] newPC,
@@ -169,7 +169,7 @@ assign rob2lsb_lab = reg_rob2lsb_lab;
 assign flush_out = reg_flush;
 assign pred_res = reg_pred_res;
 assign rob2pre_curPC = reg_rob2pre_curPC;
-assign update = reg_update;
+assign rob2pred_en = reg_update;
 assign newPC = reg_newPC;
 assign commit_rd = reg_commit_rd;
 assign commit_res = reg_commit_res;

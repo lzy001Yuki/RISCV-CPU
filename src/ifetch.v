@@ -17,6 +17,7 @@ module ifetch(
     output wire if2dec, // enable decode operation
     output wire[`INST_WIDTH - 1 : 0] inst_out,
     output wire[`ADDR_WIDTH - 1 : 0] pc_out, // to decode & predictor
+    output wire if2pred_en,
     output wire[`ADDR_WIDTH - 1 : 0] next_PC, // to cache
     output wire next_inst // to cache
 );
@@ -45,7 +46,7 @@ always @(posedge clk) begin
             reg_next_PC <= alu2if;
         end
         else if (decUpd) begin
-            reg_next_pc <= dec2if;
+            reg_next_PC <= dec2if;
         end
         if_stall <= 0;
         reg_inst_out <= 0;
