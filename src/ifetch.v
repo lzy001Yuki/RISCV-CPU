@@ -10,6 +10,7 @@ module ifetch(
     input wire[`ADDR_WIDTH - 1 : 0] alu2if, // get next PC from alu
     input wire[`ADDR_WIDTH - 1 : 0] rob2if, // get next PC from rob
     input wire[`ADDR_WIDTH - 1 : 0] dec2if, // get next PC from decoder
+    input wire dec2if_stall,
     input wire alu2if_cont,
     input wire flush,
     input wire decUpd,

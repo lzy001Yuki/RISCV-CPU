@@ -22,3 +22,5 @@
 `define ID_WIDTH 5
 `define VAL_WIDTH 32
 `define RS_ID_WIDTH 3
+`define LSB_ID_WIDTH 3
+`define LSB_SIZE 8

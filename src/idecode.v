@@ -10,13 +10,26 @@ module decode(
     input wire [`INST_WIDTH - 1 : 0] inst_in,
     // from predictor
     input wire pred,
+    // to lsb & rob & rs
     output wire [`OP_WIDTH - 1 : 0] orderType,
     output wire [`REG_WIDTH - 1 : 0] dec_rd,
     output wire [`REG_WIDTH - 1 : 0] dec_rs1,
     output wire [`REG_WIDTH - 1 : 0] dec_rs2,
     output wire [`VAL_WIDTH - 1 : 0] dec_imm,
     output wire decUpd,
-    output wire [`ADDR_WIDTH - 1 : 0] dec2if_pc
+    // to ifetch
+    output wire [`ADDR_WIDTH - 1 : 0] dec2if_pc,
+    // from lsb & rs
+    input wire lsbFull,
+    input wire rsFull,
+    input wire robFull,
+    // to if & rob
+    output wire dec2if_rob_en,
+    // to lsb
+    output wire dec2lsb_en,
+    // to rs
+    output wire dec2rs_en
+
 );
 
 reg [`OP_WIDTH - 1 : 0] opcode;
@@ -45,6 +58,15 @@ always @(posedge clk) begin
     end
     else if (!rdy_in) begin
         // do nothing
+    end
+    else if ((opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE && rsFull)) begin
+        // remain the same
+    end
+    else if ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && lsbFull) begin
+        // remain the same
+    end
+    else if (robFull) begin
+        
     end
     else if (if2dec && rdy_in) begin
         opcode <= inst_in[`OP_WIDTH - 1 : 0];
@@ -119,7 +141,6 @@ always @(posedge clk) begin
                                 reg_orderType <= {opcode[6 : 4], funct3, 1'b0};
                             end
                         end
-
                     endcase
                 end
                 `OP_R_TYPE: begin
@@ -194,5 +215,7 @@ assign dec_rs2 = reg_dec_rs2;
 assign dec_imm = reg_dec_imm;
 assign decUpd = reg_dec2if_pc ? 1 : 0;
 assign dec2if_pc = reg_dec2if_pc;
+assign dec2if_rob_en = ((opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE && !rsFull)
+|| ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && !lsbFull)) ? 1 : 0;
 endmodule
 

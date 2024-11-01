@@ -61,7 +61,10 @@ module reorderBuffer(
     // to ifetch
     output wire [`ADDR_WIDTH - 1 : 0] newPC,
 
-    output wire flush_out
+    output wire flush_out,
+
+    // from lsb
+    input wire lsbFull
 );
 
 // consider simplify register use????

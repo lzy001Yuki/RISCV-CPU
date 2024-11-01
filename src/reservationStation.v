@@ -18,6 +18,7 @@ module reservationStation(
     // connect to decoder
     input wire [`OP_WIDTH - 1 : 0 ] type,
     input wire [`VAL_WIDTH - 1 : 0] imm, 
+    output wire isFull,
     // connect to rob
     input wire [`ID_WIDTH - 1 : 0] label1,
     input wire [`ID_WIDTH - 1 : 0] label2,
@@ -40,8 +41,7 @@ module reservationStation(
     input wire[`VAL_WIDTH - 1 : 0] val_in,
 
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
-    output wire[`ID_WIDTH - 1 : 0] lab2cdb,
-    output wire isFull
+    output wire[`ID_WIDTH - 1 : 0] lab2cdb
 );
 // reg inside the module can remain until changed, thus useful!!
 reg busy [0 : `RS_SIZE - 1];
