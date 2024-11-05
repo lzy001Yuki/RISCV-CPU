@@ -59,15 +59,6 @@ always @(posedge clk) begin
     else if (!rdy_in) begin
         // do nothing
     end
-    else if ((opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE && rsFull)) begin
-        // remain the same
-    end
-    else if ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && lsbFull) begin
-        // remain the same
-    end
-    else if (robFull) begin
-        
-    end
     else if (if2dec && rdy_in) begin
         opcode <= inst_in[`OP_WIDTH - 1 : 0];
         reg_dec_rd <= 0;
@@ -216,6 +207,8 @@ assign dec_imm = reg_dec_imm;
 assign decUpd = reg_dec2if_pc ? 1 : 0;
 assign dec2if_pc = reg_dec2if_pc;
 assign dec2if_rob_en = ((opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE && !rsFull)
-|| ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && !lsbFull)) ? 1 : 0;
+|| ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && !lsbFull)) && !robFull ? 1 : 0;
+assign dec2lsb_en = (opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) ? 1 : 0;
+assign dec2rs_en = (opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE) ? 1 : 0;
 endmodule
 

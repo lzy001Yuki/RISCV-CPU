@@ -18,6 +18,7 @@ module reservationStation(
     // connect to decoder
     input wire [`OP_WIDTH - 1 : 0 ] type,
     input wire [`VAL_WIDTH - 1 : 0] imm, 
+    input wire dec2rs_en,
     output wire isFull,
     // connect to rob
     input wire [`ID_WIDTH - 1 : 0] label1,
@@ -101,7 +102,7 @@ always @(posedge clk) begin
             Q2[i] <= 0;
         end
     end else if (!rdy_in) begin
-    end else begin
+    end else if (dec2rs_en) begin
         // issue
         if (!rsFull) begin
             entry[issue_id] <= newTag;

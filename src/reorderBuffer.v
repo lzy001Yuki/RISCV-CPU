@@ -94,7 +94,7 @@ integer i;
 
 always @(posedge clk) begin
     if (rst_in || (reg_flush && rdy_in)) begin
-        tag <= 0;
+        tag <= 1;
         head <= 0;
         tail <= 0;
         for (i = 0; i < `ROB_SIZE; i++) begin
@@ -112,13 +112,13 @@ always @(posedge clk) begin
         reg_instType <= inst;
         reg_lab2idx <= rs2rob_id;
         if (!rsFull) begin
-            tail <= (tail != `ROB_SIZE) ? tail + 1 : 0;
+            tail <= (tail != `ROB_SIZE - 1) ? tail + 1 : 0;
             nowPC[tail] <= curPC;
             jump[tail] <= jump_addr;
             res[tail] <= isJump ? 1 : 0;
             dest[tail] <= dest_rd;
             label[tail] <= tag;
-            tag <= (tag != `ROB_SIZE - 1) ? tag + 1 : 0;
+            tag <= (tag != `ROB_SIZE) ? tag + 1 : 0;
         end
         // fetchData
         if (cdbReady) begin
@@ -178,10 +178,10 @@ assign commit_rd = reg_commit_rd;
 assign commit_res = reg_commit_res;
 assign commit_lab = reg_commit_lab;
 assign lab2idx = reg_lab2idx;
-assign label1 = rf_label1;
-assign label2 = rf_label2;
-assign res1 = rf_label1 ? res[rf_label1] : rf_val1;
-assign res2 = rf_label2 ? res[rf_label2] : rf_val2;
-assign ready1 = ready[rf_label1];
-assign ready2 = ready[rf_label2];
+assign label1 = rf_label1 - 1;
+assign label2 = rf_label2 - 1;
+assign res1 = rf_label1 ? res[rf_label1 - 1] : rf_val1;
+assign res2 = rf_label2 ? res[rf_label2 - 1] : rf_val2;
+assign ready1 = ready[rf_label1 - 1];
+assign ready2 = ready[rf_label2 - 1];
 endmodule
