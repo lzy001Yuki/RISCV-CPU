@@ -42,7 +42,8 @@ module reservationStation(
     input wire[`VAL_WIDTH - 1 : 0] val_in,
 
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
-    output wire[`ID_WIDTH - 1 : 0] lab2cdb
+    output wire[`ID_WIDTH - 1 : 0] lab2cdb,
+    output wire rs_cdb_en
 );
 // reg inside the module can remain until changed, thus useful!!
 reg busy [0 : `RS_SIZE - 1];
@@ -100,11 +101,14 @@ always @(posedge clk) begin
             V2[i] <= 0;
             Q1[i] <= 0;
             Q2[i] <= 0;
+            orderType[i] <= 0;
+            issue_id <= 4'b1000;
+            exe_id <= 4'b1000;
         end
     end else if (!rdy_in) begin
     end else if (dec2rs_en) begin
         // issue
-        if (!rsFull) begin
+        if (!rsFull && dec2rs_en) begin
             entry[issue_id] <= newTag;
             busy[issue_id] <= 1;
             orderType[issue_id] <= type;
@@ -192,6 +196,7 @@ alu alu(
 assign rs_issue_id = issue_id;
 assign val2cdb = aluReady ? reg_val_in : 0;
 assign lab2cdb = aluReady ? reg_entry_in : 0;
+assign rs_cdb_en = aluReady? 1 : 0;
 
 
 endmodule

@@ -12,6 +12,7 @@ module reorderBuffer(
     input wire [`OP_WIDTH - 1 : 0] inst,
     input wire [`REG_SIZE - 1 : 0] dest_rd,
     input wire [`ADDR_WIDTH - 1: 0] jump_addr,
+    input wire dec2rob_en,
 
     // from rf
     input wire [`OP_WIDTH - 1 : 0] rf_label1,
@@ -39,9 +40,12 @@ module reorderBuffer(
     output wire [`ID_WIDTH - 1 : 0] newTag, // to rs
 
     // from cdb
-    input wire cdbReady,
-    input wire [`ID_WIDTH - 1 : 0] cdb2lab,
-    input wire [`VAL_WIDTH - 1 : 0] cdb2val,
+    input wire rs_cdb_en,
+    input wire [`ID_WIDTH - 1 : 0] rs_cdb2lab,
+    input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
+    input wire lsb_cdb_en,
+    input wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab,
+    input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
 
     output wire robFull,
 
@@ -49,9 +53,6 @@ module reorderBuffer(
     input wire aluReady,
     input wire [`ID_WIDTH - 1 : 0] entry_in,
     input wire [`VAL_WIDTH - 1 : 0] val_in,
-
-    // to lsb (for store inst)
-    output wire [`ID_WIDTH - 1 : 0] rob2lsb_lab,
 
     // to predictor
     output wire pred_res,
@@ -78,7 +79,6 @@ reg [`ADDR_WIDTH - 1 : 0] nowPC [0 : `ROB_SIZE - 1];
 reg [`REG_WIDTH - 1 : 0] dest [0 : `ROB_SIZE - 1]; //rd
 reg [`ID_WIDTH - 1 : 0] label [0 : `ROB_SIZE - 1];
 reg [`ADDR_WIDTH - 1 : 0] jump [0 : `ROB_SIZE - 1]; // jump_address if jump
-reg [`ID_WIDTH - 1 : 0] reg_rob2lsb_lab;
 reg [`OP_WIDTH - 1 : 0] reg_instType;
 reg reg_flush;
 reg reg_pred_res;
@@ -111,7 +111,7 @@ always @(posedge clk) begin
         // issue
         reg_instType <= inst;
         reg_lab2idx <= rs2rob_id;
-        if (!rsFull) begin
+        if (!rsFull && dec2rob_en) begin
             tail <= (tail != `ROB_SIZE - 1) ? tail + 1 : 0;
             nowPC[tail] <= curPC;
             jump[tail] <= jump_addr;
@@ -121,9 +121,13 @@ always @(posedge clk) begin
             tag <= (tag != `ROB_SIZE) ? tag + 1 : 0;
         end
         // fetchData
-        if (cdbReady) begin
-            ready[cdb2lab] <= 1;
-            res[cdb2lab] <= cdb2val;
+        if (rs_cdb_en) begin
+            ready[rs_cdb2lab] <= 1;
+            res[rs_cdb2lab] <= rs_cdb2val;
+        end
+        if (lsb_cdb_en) begin
+            ready[lsb_cdb2lab] <= 1;
+            res[lsb_cdb2lab] <= lsb_cdb2val;
         end
 
         // write
@@ -136,11 +140,7 @@ always @(posedge clk) begin
         if ((head != `ROB_SIZE - 1 && ready[head + 1]) || (head == `ROB_SIZE - 1 && ready[0])) begin
             head <= (head != `ROB_SIZE - 1) ? head + 1 : 0;
             // consider how to exit????
-            if (reg_instType[2 : 0] == `OP_S_TYPE) begin
-                reg_rob2lsb_lab <= label[head];
-                reg_update <= 0;
-            end
-            else if (reg_instType[2 : 0] == `OP_B_TYPE && reg_instType != `OP_JAL) begin
+            if (reg_instType[2 : 0] == `OP_B_TYPE && reg_instType != `OP_JAL) begin
                 reg_update <= 1;
                 if ((res[head] && jump[head]) || (!res[head] && !jump[head])) begin
                     reg_pred_res <= 1;
@@ -168,7 +168,6 @@ assign newTag = tag;
 assign rob2rf_tag = tag - 1;
 assign robFull = (head == tail);
 assign rob2rf_rd = dest_rd;
-assign rob2lsb_lab = reg_rob2lsb_lab;
 assign flush_out = reg_flush;
 assign pred_res = reg_pred_res;
 assign rob2pre_curPC = reg_rob2pre_curPC;
