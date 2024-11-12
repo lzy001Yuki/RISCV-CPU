@@ -25,8 +25,8 @@
 `define LSB_ID_WIDTH 3
 `define LSB_SIZE 8
 `define ICACHE_SIZE 16
-`define BLOCK_SIZE 4
-`define BLOCK_WIDTH 128
+`define BLOCK_SIZE 2
+`define BLOCK_WIDTH 64
 `define TAG_WIDTH 24
 `define INDEX_WIDTH 4
 `define OFFSET_WIDTH 2

@@ -44,15 +44,15 @@ module loadStoreBuffer#(
     // from memory
     input wire [`LSB_ID_WIDTH - 1 : 0] mem2lsb_load_id,
     input wire [`VAL_WIDTH - 1 : 0] mem2lsb_load_val,
-    output wire [`ADDR_WIDTH - 1 - 1 : 0] lsb2mem_store_addr,
-    output wire [`FUNCT3_WIDTH - 1 : 0] lsb2mem_store_type, 
-    output wire lsb2mem_store_en,
-    output wire [`VAL_WIDTH - 1 : 0] lsb2mem_store_val,
-    output wire [`ADDR_WIDTH - 1 : 0] lsb2mem_load_addr,
-    output wire [`LSB_ID_WIDTH - 1 : 0] lsb2mem_load_id,
-    output wire [`FUNCT3_WIDTH - 1 : 0] lsb2mem_load_type,
-    output wire lsb2mem_load_en,
-    input wire mem2lsb_load_en
+    input wire mem_busy,
+    input wire mem2lsb_load_en,
+    output wire [`ADDR_WIDTH - 1 - 1 : 0] lsb2mem_addr,
+    output wire [`FUNCT3_WIDTH - 1 : 0] lsb2mem_type, 
+    output wire [`VAL_WIDTH - 1 : 0] lsb2mem_val,
+    output wire lsb2mem_store_load,
+    output wire lsb2mem_en,
+    output wire [`LSB_ID_WIDTH - 1 : 0] lsb2mem_load_id
+
 
 );
 
@@ -176,24 +176,26 @@ always @(posedge clk) begin
         end
         // load or store
         // pop the first node and FIFO ensures that load&store are in time order
-        reg_commit_id <= (head == `LSB_SIZE - 1) ? 0 : head + 1;
-        reg_lsb2mem_store_en <= 0;
-        reg_lsb2mem_load_en <= 0;
-        if (nodeType[reg_commit_id] && status[reg_commit_id] == STATUS_EXE) begin
-            // store
-            reg_lsb2mem_store_en <= 1;
-            head <= (head == `LSB_SIZE - 1) ? 3'b000 : head + 1；
-            busy[reg_commit_id] <= 0;
-            reg_commit_addr <= addr[reg_commit_id];
-            reg_commit_val <= res[reg_commit_id];
-            reg_commit_type <= orderType[reg_commit_id];
-        end
-        else if (!nodeType[reg_commit_id] && status[reg_commit_id] == STATUS_EXE) begin
-            reg_lsb2mem_load_en <= 1;
-            head <= (head == `LSB_SIZE - 1) ? 3'b000 : head + 1；
-            busy[reg_commit_id] <= 0;
-            reg_commit_addr <= addr[reg_commit_id];
-            reg_commit_type <= orderType[reg_commit_id];
+        if (!mem_busy) begin
+            reg_commit_id <= (head == `LSB_SIZE - 1) ? 0 : head + 1;
+            reg_lsb2mem_store_en <= 0;
+            reg_lsb2mem_load_en <= 0;
+            if (nodeType[reg_commit_id] && status[reg_commit_id] == STATUS_EXE) begin
+                // store
+                reg_lsb2mem_store_en <= 1;
+                head <= reg_commit_id;
+                busy[reg_commit_id] <= 0;
+                reg_commit_addr <= addr[reg_commit_id];
+                reg_commit_val <= res[reg_commit_id];
+                reg_commit_type <= orderType[reg_commit_id];
+            end
+            else if (!nodeType[reg_commit_id] && status[reg_commit_id] == STATUS_EXE) begin
+                reg_lsb2mem_load_en <= 1;
+                head <= reg_commit_id;
+                busy[reg_commit_id] <= 0;
+                reg_commit_addr <= addr[reg_commit_id];
+                reg_commit_type <= orderType[reg_commit_id];
+            end
         end
 
         // write
@@ -230,14 +232,13 @@ always @(posedge clk) begin
     end
 end 
 
-assign lsb2mem_store_addr = reg_lsb2mem_store_en ? reg_commit_addr : 0;
-assign lsb2mem_store_type = reg_lsb2mem_store_en ? reg_commit_type : 0;
-assign lsb2mem_store_val = reg_lsb2mem_store_en ? reg_commit_val : 0;
-assign lsb2mem_store_en = reg_lsb2mem_store_en;
-assign lsb2mem_load_type = reg_lsb2mem_load_en ? reg_commit_type[5 : 3] : 0;
-assign lsb2mem_load_en = reg_lsb2mem_load_en;
-assign lsb2mem_load_addr = reg_lsb2mem_load_en ? reg_commit_addr[5 : 3] : 0;
+assign lsb2mem_store_load = reg_lsb2mem_store_en ? 1 : 0;
+assign lsb2mem_en = reg_lsb2mem_store_en || reg_lsb2mem_load_en;
+assign lsb2mem_addr = lsb2mem_en ? reg_commit_addr : 0;
+assign lsb2mem_type = lsb2mem_en ? reg_commit_type[5 : 3] : 0;
+assign lsb2mem_val = lsb2mem_en ? reg_commit_val : 0;
 assign lab2cdb = mem2lsb_load_en ? reg_lab2cdb : 0;
 assign val2cdb = mem2lsb_load_en ? reg_val2cdb : 0;
 assign cdbReady = reg_lab2cdb ? 1 : 0;
+assign lsb2mem_load_id = !lsb2mem_store_load ? reg_commit_id : 0;
 endmodule
