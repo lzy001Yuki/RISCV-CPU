@@ -5,10 +5,9 @@ module ifetch(
     input wire rst_in,
     input wire rdy_in,
 
-    input wire cache_rdy,
-    input wire mem_rdy,
-    input wire[`INST_WIDTH - 1 : 0] inst_in_cache,
-    input wire [`INST_WIDTH - 1 : 0] inst_in_mem,
+    // from controller
+    input wire inst_rdy,
+    input wire [`INST_WIDTH - 1 : 0] inst_in,
     input wire[`ADDR_WIDTH - 1 : 0] alu2if, // get next PC from alu
     input wire[`ADDR_WIDTH - 1 : 0] rob2if, // get next PC from rob
     input wire[`ADDR_WIDTH - 1 : 0] dec2if, // get next PC from decoder
@@ -56,13 +55,8 @@ always @(posedge clk) begin
         reg_inst_out <= 0;
         reg_pc_out <= 0;
     end
-    else if (!if_stall && (cache_rdy || mem_rdy)) begin
-        if (cache_rdy) begin
-            reg_inst_out <= inst_in_cache;
-        end
-        else begin
-            reg_inst_out <= inst_in_mem;
-        end
+    else if (!if_stall && inst_rdy) begin
+        reg_inst_out <= inst_in;
         reg_next_PC <= reg_next_PC + 4;
         reg_pc_out <= reg_next_PC;
     
@@ -72,7 +66,7 @@ always @(posedge clk) begin
     end
 end
 
-assign next_inst = !if_stall;
+assign next_inst = !if_stall; // to cache
 assign pc_out = reg_pc_out;
 assign next_PC = reg_next_PC;
 assign inst_out = reg_inst_out;

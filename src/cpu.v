@@ -18,6 +18,20 @@ module cpu(
 
 // implementation goes here
 
+controller ctrl(
+  .clk(clk_in),
+  .rst_in(rst_in),
+  .rdy_in(rdy_in),
+
+  .io_buffer_full(io_buffer_full),
+  .mem_din(mem_din),
+  .mem_rw(mem_wr),
+  .mem_aout(mem_a),
+  .mem_dout(mem_dout)
+
+  // to do ......
+);
+
 // Specifications:
 // - Pause cpu(freeze pc, registers, etc.) when rdy_in is low
 // - Memory read result will be returned in the next cycle. Write takes 1 cycle(no need to wait)
