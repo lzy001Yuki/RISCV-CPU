@@ -17,7 +17,7 @@ module alu(
     output wire [`VAL_WIDTH - 1 : 0] val_out,
 
     // to ifetch
-    output wire [`ADDR_WIDTH - 1 : 0] alu2if_pc.
+    output wire [`ADDR_WIDTH - 1 : 0] alu2if_pc,
     output wire alu2if_con
 );
 
@@ -135,6 +135,6 @@ end
 assign aluReady = ready;
 assign val_out = val_out_reg;
 assign entry_out = reg_entry;
-assign alu2if_cont = cont;
+assign alu2if_cont = cont; // has calculated JALR's destination
 assign alu2if_pc = PC;
 endmodule

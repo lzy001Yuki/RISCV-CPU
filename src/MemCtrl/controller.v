@@ -1,6 +1,5 @@
-`include "../util.v"
-`include "icache.v"
-`include "memory.v"
+`include "util.v"
+
 
 module controller(
     input wire clk,

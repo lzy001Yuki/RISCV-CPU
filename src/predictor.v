@@ -12,7 +12,6 @@ module predictor # (
     input wire[`ADDR_WIDTH - 1 : 0] rob2pre_nextPC,
     input wire if2pred_en,
     input wire rob2pred_en,
-    input wire update,
     input wire pred_res,
     output wire prediction // 0/1
 );

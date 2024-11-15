@@ -28,14 +28,10 @@ module loadStoreBuffer#(
 
     // from cdb
     input wire cdbReady,
-    input wire [`ID_WIDTH - 1 : 0] cdb2lab,
-    input wire [`VAL_WIDTH - 1 : 0] cdb2val,
-
-    // to alu
-    output wire execute,
-    input wire aluReady,
-    input wire[`ID_WIDTH - 1 : 0] entry_in, 
-    input wire[`VAL_WIDTH - 1 : 0] val_in,
+    input wire [`ID_WIDTH - 1 : 0] rs_cdb2lab,
+    input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
+    input wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab,
+    input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
     // to cdb
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
     output wire[`ID_WIDTH - 1 : 0] lab2cdb,
@@ -213,18 +209,20 @@ always @(posedge clk) begin
         // fetch data
         for (i = 0; i < `LSB_SIZE; i = i + 1) begin
             if (cdbReady && busy[i]) begin
-                if (cdb2lab == Q1[i]) begin
-                    if (nodeType[i]) begin
-                        V1[i] = cdb2val + V1[i];
-                        Q1[i] = 0;
-                    end
-                    else begin
-                        V1[i] = cdb2val;
-                        Q1[i] = 0;
-                    end
+                if (rs_cdb2lab == Q1[i]) begin
+                    V1[i] = nodeType[i] ? rs_cdb2val + V1[i] : rs_cdb2val;
+                    Q1[i] = 0;
                 end
-                else if (cdb2lab == Q2[i]) begin
-                    V2[i] = cdb2val;
+                else if (rs_cdb2lab == Q2[i]) begin
+                    V2[i] = rs_cdb2val;
+                    Q2[i] = 0;
+                end
+                if (lsb_cdb2lab == Q1[i]) begin
+                    V1[i] = nodeType[i] ? lsb_cdb2val + V1[i] : lsb_cdb2val;
+                    Q1[i] = 0;
+                end
+                else if (lsb_cdb2lab == Q2[i]) begin
+                    V2[i] = lsb_cdb2val;
                     Q2[i] = 0;
                 end
             end                                                                                                                                  
@@ -239,6 +237,6 @@ assign lsb2mem_type = lsb2mem_en ? reg_commit_type[5 : 3] : 0;
 assign lsb2mem_val = lsb2mem_en ? reg_commit_val : 0;
 assign lab2cdb = mem2lsb_load_en ? reg_lab2cdb : 0;
 assign val2cdb = mem2lsb_load_en ? reg_val2cdb : 0;
-assign cdbReady = reg_lab2cdb ? 1 : 0;
+assign lsb_cdb_en = reg_lab2cdb ? 1 : 0;
 assign lsb2mem_load_id = !lsb2mem_store_load ? reg_commit_id : 0;
 endmodule

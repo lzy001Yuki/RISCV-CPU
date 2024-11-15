@@ -13,9 +13,12 @@ module reservationStation(
     // if no lab needed, the label input equals to zero?
     // but can use non-blocking assignment
 
-    input wire [`ADDR_WIDTH - 1 : 0] nowPC,
+    // to ifetch
+    output wire [`ADDR_WIDTH - 1 : 0] alu2if_newPC,
+    output wire alu2if_continuous,
 
     // connect to decoder
+    input wire [`ADDR_WIDTH - 1 : 0] nowPC,
     input wire [`OP_WIDTH - 1 : 0 ] type,
     input wire [`VAL_WIDTH - 1 : 0] imm, 
     input wire dec2rs_en,
@@ -32,18 +35,15 @@ module reservationStation(
 
     // connect to cdb
     input wire cdbReady,
-    input wire [`ID_WIDTH - 1 : 0] cdb2lab,
-    input wire [`VAL_WIDTH - 1 : 0] cdb2val,
+    input wire [`ID_WIDTH - 1 : 0] rs_cdb2lab,
+    input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
+    input wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab,
+    input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
 
     // connect to alu
-    output wire execute,
-    input wire aluReady,
-    input wire[`ID_WIDTH - 1 : 0] entry_in, 
-    input wire[`VAL_WIDTH - 1 : 0] val_in,
-
+    output wire aluReady,
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
-    output wire[`ID_WIDTH - 1 : 0] lab2cdb,
-    output wire rs_cdb_en
+    output wire[`ID_WIDTH - 1 : 0] lab2cdb
 );
 // reg inside the module can remain until changed, thus useful!!
 reg busy [0 : `RS_SIZE - 1];
@@ -55,8 +55,6 @@ reg [`VAL_WIDTH - 1 : 0] Q2 [0 : `RS_SIZE - 1];
 reg [`OP_WIDTH - 1 : 0] orderType [0 : `RS_SIZE - 1];
 reg [`RS_ID_WIDTH : 0] issue_id;
 reg [`RS_ID_WIDTH : 0] exe_id;
-reg[`ID_WIDTH - 1 : 0] reg_entry_in;
-reg[`VAL_WIDTH - 1 : 0] reg_val_in;
 reg rsFull;
 reg reg_execute;
 
@@ -64,6 +62,16 @@ integer i;
 
 // find issue_id
 always @(*) begin
+    if (cdbReady) begin
+        for (i = 0; i < `RS_SIZE; i++) begin
+            if (busy[i]) begin
+                V1[i] = (Q1[i] == rs_cdb2lab) ? rs_cdb2val : (Q1[i] == lsb_cdb2lab) ? lsb_cdb2val : V1[i];
+                Q1[i] = (Q1[i] == rs_cdb2lab) ? 0 : (Q1[i] == lsb_cdb2lab) ? 0 : Q1[i];
+                V2[i] = (Q2[i] == rs_cdb2lab) ? rs_cdb2val : (Q2[i] == lsb_cdb2lab) ? lsb_cdb2val : V2[i];
+                Q2[i] = (Q2[i] == rs_cdb2lab) ? 0 : (Q2[i] == lsb_cdb2lab) ? 0 : Q2[i];
+            end
+        end
+    end
     issue_id <= 4'b1000;
     exe_id <= 4'b1000;
     for (i = 0; i < `RS_SIZE; i = i + 1) begin
@@ -90,7 +98,6 @@ always @(*) begin
 end
 
 assign isFull = rsFull;
-assign execute = reg_execute;
 
 always @(posedge clk) begin
     if (rst_in || (flush && rdy_in)) begin
@@ -154,25 +161,20 @@ always @(posedge clk) begin
             end
         end
         // fetch data
-        if (cdbReady) begin
-            for (i = 0; i < `RS_SIZE; i++) begin
-                if (busy[i]) begin
-                    if (Q1[i] == cdb2lab) begin
-                        V1[i] = cdb2val;
-                        Q1[i] = 0;
-                    end
-                    if (Q2[i] == cdb2lab) begin
-                        V2[i] = cdb2val;
-                        Q2[i] = 0;
-                    end
-                end
-            end
-        end
-        // write
-        if (aluReady) begin
-            reg_entry_in <= entry_in;
-            reg_val_in <= val_in;
-        end
+        // if (cdbReady) begin
+        //     for (i = 0; i < `RS_SIZE; i++) begin
+        //         if (busy[i]) begin
+        //             if (Q1[i] == cdb2lab) begin
+        //                 V1[i] = cdb2val;
+        //                 Q1[i] = 0;
+        //             end
+        //             if (Q2[i] == cdb2lab) begin
+        //                 V2[i] = cdb2val;
+        //                 Q2[i] = 0;
+        //             end
+        //         end
+        //     end
+        // end
     end
 end
 
@@ -183,20 +185,19 @@ alu alu(
     .rst_in(rst_in),
     .rdy_in(rdy_in),
 
+    .execute(reg_execute),
     .type(orderType[exe_id]),
     .val1(V1[exe_id]),
     .val2(V2[exe_id]),
     .entry(entry[exe_id]),
+    .nowPC(nowPC),
 
     .aluReady(aluReady),
-    .entry_out(entry_in),
-    .val_out(val_in)
+    .entry_out(lab2cdb),
+    .val_out(val2cdb),
+
+    .alu2if_pc(alu2if_newPC),
+    .alu2if_con(alu2if_continuous)
 );
-
-assign rs_issue_id = issue_id;
-assign val2cdb = aluReady ? reg_val_in : 0;
-assign lab2cdb = aluReady ? reg_entry_in : 0;
-assign rs_cdb_en = aluReady? 1 : 0;
-
 
 endmodule

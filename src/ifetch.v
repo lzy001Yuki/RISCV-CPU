@@ -8,6 +8,7 @@ module ifetch(
     // from controller
     input wire inst_rdy,
     input wire [`INST_WIDTH - 1 : 0] inst_in,
+    
     input wire[`ADDR_WIDTH - 1 : 0] alu2if, // get next PC from alu
     input wire[`ADDR_WIDTH - 1 : 0] rob2if, // get next PC from rob
     input wire[`ADDR_WIDTH - 1 : 0] dec2if, // get next PC from decoder
@@ -70,6 +71,6 @@ assign next_inst = !if_stall; // to cache
 assign pc_out = reg_pc_out;
 assign next_PC = reg_next_PC;
 assign inst_out = reg_inst_out;
-assign if2dec = dec2if_en && !if_stall && cache_rdy;
+assign if2dec = dec2if_en && !if_stall && inst_rdy;
 
 endmodule

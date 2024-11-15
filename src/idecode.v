@@ -1,5 +1,5 @@
 `include"util.v"
-module decode(
+module idecode(
     input wire clk,
     input wire rst_in,
     input wire rdy_in,
@@ -25,11 +25,12 @@ module decode(
     input wire robFull,
     // to if & rob
     output wire dec2if_rob_en,
+    output wire [`ADDR_WIDTH - 1 : 0] dec_inst_curPC,
+    output wire [`ADDR_WIDTH - 1 : 0] dec2rob_jump_addr,
     // to lsb
     output wire dec2lsb_en,
     // to rs
     output wire dec2rs_en
-
 );
 
 reg [`OP_WIDTH - 1 : 0] opcode;
@@ -42,6 +43,7 @@ reg [`REG_WIDTH - 1 : 0] reg_dec_rs1;
 reg [`REG_WIDTH - 1 : 0] reg_dec_rs2;
 reg [`VAL_WIDTH - 1 : 0] reg_dec_imm;
 reg [`ADDR_WIDTH - 1 : 0] reg_dec2if_pc;
+reg [`ADDR_WIDTH - 1 : 0] reg_curPC;
 
 
 always @(posedge clk) begin
@@ -65,6 +67,7 @@ always @(posedge clk) begin
         reg_dec_rs1 <= 0;
         reg_dec_rs2 <= 0;
         reg_dec2if_pc <= 0;
+        reg_curPC <= pc_in;
         if (opcode == `OP_AUIPC) begin
             reg_dec_imm <= {inst_in[31 : 12], 12'b0};
             reg_orderType <= opcode;
@@ -206,9 +209,11 @@ assign dec_rs2 = reg_dec_rs2;
 assign dec_imm = reg_dec_imm;
 assign decUpd = reg_dec2if_pc ? 1 : 0;
 assign dec2if_pc = reg_dec2if_pc;
+assign dec2rob_jump_addr = pred ? reg_dec2if_pc : 0;
 assign dec2if_rob_en = ((opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE && !rsFull)
 || ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && !lsbFull)) && !robFull ? 1 : 0;
 assign dec2lsb_en = (opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) ? 1 : 0;
 assign dec2rs_en = (opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE) ? 1 : 0;
+assign dec2_inst_curPC = reg_curPC;
 endmodule
 

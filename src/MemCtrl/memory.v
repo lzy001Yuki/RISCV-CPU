@@ -1,4 +1,4 @@
-`include"../util.v"
+`include"util.v"
 // we only contain the ins_cache part
 module memory(
     input wire clk,

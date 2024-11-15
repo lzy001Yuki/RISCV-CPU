@@ -8,15 +8,14 @@ module reorderBuffer(
     input wire [`ADDR_WIDTH - 1 : 0] curPC,
 
     // from decoder
-    input wire isJump,
     input wire [`OP_WIDTH - 1 : 0] inst,
     input wire [`REG_SIZE - 1 : 0] dest_rd,
     input wire [`ADDR_WIDTH - 1: 0] jump_addr,
     input wire dec2rob_en,
 
     // from rf
-    input wire [`OP_WIDTH - 1 : 0] rf_label1,
-    input wire [`OP_WIDTH - 1 : 0] rf_label2,
+    input wire [`ID_WIDTH - 1 : 0] rf_label1,
+    input wire [`ID_WIDTH - 1 : 0] rf_label2,
     input wire [`VAL_WIDTH - 1 : 0] rf_val1,
     input wire [`VAL_WIDTH - 1 : 0] rf_val2,
 
@@ -28,7 +27,6 @@ module reorderBuffer(
     output wire [`ID_WIDTH - 1 : 0] commit_lab,
 
     // from rs
-    input wire [`ID_WIDTH - 1 : 0] rs2rob_id,
     input wire rsFull,
     // to rs
     output wire [`ID_WIDTH - 1 : 0] label1,
@@ -40,19 +38,13 @@ module reorderBuffer(
     output wire [`ID_WIDTH - 1 : 0] newTag, // to rs
 
     // from cdb
-    input wire rs_cdb_en,
+    input wire cdbReady,
     input wire [`ID_WIDTH - 1 : 0] rs_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
-    input wire lsb_cdb_en,
     input wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
 
     output wire robFull,
-
-    // from alu
-    input wire aluReady,
-    input wire [`ID_WIDTH - 1 : 0] entry_in,
-    input wire [`VAL_WIDTH - 1 : 0] val_in,
 
     // to predictor
     output wire pred_res,
@@ -88,7 +80,6 @@ reg reg_update;
 reg [`REG_WIDTH - 1 : 0] reg_commit_rd;
 reg [`VAL_WIDTH - 1 : 0] reg_commit_res;
 reg [`ID_WIDTH - 1 : 0] reg_commit_lab;
-reg [`ID_WIDTH - 1 : 0] reg_lab2idx;
 
 integer i;
 
@@ -110,30 +101,22 @@ always @(posedge clk) begin
     else if (rdy_in) begin
         // issue
         reg_instType <= inst;
-        reg_lab2idx <= rs2rob_id;
         if (!rsFull && dec2rob_en) begin
             tail <= (tail != `ROB_SIZE - 1) ? tail + 1 : 0;
             nowPC[tail] <= curPC;
-            jump[tail] <= jump_addr;
-            res[tail] <= isJump ? 1 : 0;
+            jump[tail] <= jump_addr; // 0 or true addr
             dest[tail] <= dest_rd;
             label[tail] <= tag;
             tag <= (tag != `ROB_SIZE) ? tag + 1 : 0;
         end
         // fetchData
-        if (rs_cdb_en) begin
+        if (cdbReady) begin
             ready[rs_cdb2lab] <= 1;
             res[rs_cdb2lab] <= rs_cdb2val;
         end
-        if (lsb_cdb_en) begin
+        if (cdbReady) begin
             ready[lsb_cdb2lab] <= 1;
             res[lsb_cdb2lab] <= lsb_cdb2val;
-        end
-
-        // write
-        if (aluReady) begin
-            ready[entry_in] <= 1;
-            res[entry_in] <= val_in;
         end
 
         // commit
@@ -147,9 +130,11 @@ always @(posedge clk) begin
                     reg_rob2pre_curPC <= nowPC[head];
                 end
                 else begin
+                    // false prediction
                     reg_newPC <= res[head] ? jump[head] : nowPC[head] + 4;
                     reg_pred_res <= 0;
                     reg_rob2pre_curPC <= nowPC[head];
+                    reg_flush <= 1;
                 end
             end 
             else if (reg_instType[2 : 0] != `OP_S_TYPE && reg_instType[2 : 0] != `OP_B_TYPE && reg_instType != `OP_LUI && reg_instType != `OP_AUIPC && reg_instType !=`OP_JAL) begin
@@ -176,7 +161,6 @@ assign newPC = reg_newPC;
 assign commit_rd = reg_commit_rd;
 assign commit_res = reg_commit_res;
 assign commit_lab = reg_commit_lab;
-assign lab2idx = reg_lab2idx;
 assign label1 = rf_label1 - 1;
 assign label2 = rf_label2 - 1;
 assign res1 = rf_label1 ? res[rf_label1 - 1] : rf_val1;
