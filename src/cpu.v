@@ -16,6 +16,16 @@ module cpu(
 	output wire [31:0]			dbgreg_dout		// cpu register output (debugging demo)
 );
 
+// Specifications:
+// - Pause cpu(freeze pc, registers, etc.) when rdy_in is low
+// - Memory read result will be returned in the next cycle. Write takes 1 cycle(no need to wait)
+// - Memory is of size 128KB, with valid address ranging from 0x0 to 0x20000
+// - I/O port is mapped to address higher than 0x30000 (mem_a[17:16]==2'b11)
+// - 0x30000 read: read a byte from input
+// - 0x30000 write: write a byte to output (write 0x00 is ignored)
+// - 0x30004 read: read clocks passed since cpu starts (in dword, 4 bytes)
+// - 0x30004 write: indicates program stop (will output '\0' through uart tx)
+
 // implementation goes here
 
 wire ctrl2if_inst_rdy;
@@ -136,13 +146,13 @@ predictor pred(
 );
 
 wire robFull;
-wire [`ID_WIDTH - 1 : 0] rob_label1;
-wire [`ID_WIDTH - 1 : 0] rob_label2;
+wire [`ROB_ID_WIDTH : 0] rob_label1;
+wire [`ROB_ID_WIDTH : 0] rob_label2;
 wire [`VAL_WIDTH - 1 : 0] rob_res1;
 wire [`VAL_WIDTH - 1 : 0] rob_res2;
 wire rob_ready1;
 wire rob_ready2;
-wire [`ID_WIDTH - 1 : 0] rob_newTag;
+wire [`ROB_ID_WIDTH : 0] rob_newTag;
 wire [`ADDR_WIDTH - 1 : 0] dec_instPC_out;
 wire [`ADDR_WIDTH - 1 : 0] rob2if_newPC;
 wire rob2pred_en;
@@ -164,9 +174,7 @@ reorderBuffer rob(
   .rf_label2(rf2rob_lab2),
   .rf_val1(rf2rob_val1),
   .rf_val2(rf2rob_val2),
-  
-  .rob2rf_rd(rob2rf_rd),
-  .rob2rf_tag(rob2rf_tag),
+
   .commit_rd(rob2rf_commit_rd),
   .commit_res(rob2rf_commit_res),
   .commit_lab(rob2rf_commit_lab),
@@ -199,15 +207,13 @@ reorderBuffer rob(
   .lsbFull(lsbFull)
 );
 
-wire [`REG_WIDTH - 1 : 0] rob2rf_rd;
-wire [`ID_WIDTH - 1 : 0] rob2rf_tag;
 wire [`REG_WIDTH - 1 : 0] rob2rf_commit_rd;
 wire [`VAL_WIDTH - 1 : 0] rob2rf_commit_res;
-wire [`ID_WIDTH - 1 : 0] rob2rf_commit_lab;
+wire [`ROB_ID_WIDTH : 0] rob2rf_commit_lab;
 wire [`VAL_WIDTH - 1 : 0] rf2rob_val1;
 wire [`VAL_WIDTH - 1 : 0] rf2rob_val2;
-wire [`ID_WIDTH - 1 : 0] rf2rob_lab1;
-wire [`ID_WIDTH - 1 : 0] rf2rob_lab2;
+wire [`ROB_ID_WIDTH : 0] rf2rob_lab1;
+wire [`ROB_ID_WIDTH : 0] rf2rob_lab2;
 
 register regFile(
   .clk(clk_in),
@@ -216,8 +222,9 @@ register regFile(
 
   .flush(rob_flush),
 
-  .rob2rf_rd(rob2rf_rd),
-  .rob2rf_tag(rob2rf_tag),
+  .dec2rf_rd(dec_rd_out),
+  .dec2rob_en(dec2if_rob_en),
+  .rob2rf_tag(rob_newTag),
   .rob2rf_commit_rd(rob2rf_commit_rd),
   .rob2rf_commit_res(rob2rf_commit_res),
   .rob2rf_commit_lab(rob2rf_commit_lab),
@@ -327,13 +334,13 @@ loadStoreBuffer lsb(
 wire cdbReady;
 wire rs2cdb_en;
 wire lsb2cdb_en;
-wire [`ID_WIDTH - 1 : 0] rs2cdb_lab;
+wire [`ROB_ID_WIDTH : 0] rs2cdb_lab;
 wire [`VAL_WIDTH - 1 : 0] rs2cdb_val;
-wire [`ID_WIDTH - 1 : 0] lsb2cdb_lab;
+wire [`ROB_ID_WIDTH : 0] lsb2cdb_lab;
 wire [`VAL_WIDTH - 1 : 0] lsb2cdb_val;
-wire [`ID_WIDTH - 1 : 0] cdb2rs_lab;
+wire [`ROB_ID_WIDTH : 0] cdb2rs_lab;
 wire [`VAL_WIDTH - 1 : 0] cdb2rs_val;
-wire [`ID_WIDTH - 1 : 0] cdb2lsb_lab;
+wire [`ROB_ID_WIDTH : 0] cdb2lsb_lab;
 wire [`VAL_WIDTH - 1 : 0] cdb2lsb_val;
 
 cdb cdbus(

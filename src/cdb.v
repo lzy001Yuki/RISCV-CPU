@@ -7,23 +7,23 @@ module cdb(
     input wire flush,
     input rs_cdb_enin,
     input lsb_cdb_enin,
-    input wire [`ID_WIDTH - 1 : 0] rs_cdb2lab_in,
+    input wire [`ROB_ID_WIDTH : 0] rs_cdb2lab_in,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val_in,
-    input wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab_in,
+    input wire [`ROB_ID_WIDTH : 0] lsb_cdb2lab_in,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val_in,
 
     output cdbReady,
-    output wire [`ID_WIDTH - 1 : 0] rs_cdb2lab_out,
+    output wire [`ROB_ID_WIDTH : 0] rs_cdb2lab_out,
     output wire [`VAL_WIDTH - 1 : 0] rs_cdb2val_out,
-    output wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab_out,
+    output wire [`ROB_ID_WIDTH : 0] lsb_cdb2lab_out,
     output wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val_out
 );
 
 reg reg_rs_en;
 reg reg_lsb_en;
-reg [`ID_WIDTH - 1 : 0] reg_rs_lab;
+reg [`ROB_ID_WIDTH : 0] reg_rs_lab;
 reg [`VAL_WIDTH - 1 : 0] reg_rs_val;
-reg [`ID_WIDTH - 1 : 0] reg_lsb_lab;
+reg [`ROB_ID_WIDTH : 0] reg_lsb_lab;
 reg [`VAL_WIDTH - 1 : 0] reg_lsb_val;
 
 always @(*) begin

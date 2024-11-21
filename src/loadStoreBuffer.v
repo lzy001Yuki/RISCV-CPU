@@ -18,9 +18,9 @@ module loadStoreBuffer#(
     output wire isFull,
 
     // from rob
-    input wire [`ID_WIDTH - 1 : 0] newTag,
-    input wire [`ID_WIDTH - 1 : 0] label1,
-    input wire [`ID_WIDTH - 1 : 0] label2,
+    input wire [`ROB_ID_WIDTH : 0] newTag,
+    input wire [`ROB_ID_WIDTH : 0] label1,
+    input wire [`ROB_ID_WIDTH : 0] label2,
     input wire [`VAL_WIDTH - 1 : 0] res1, //from rob (val from rob / rf)
     input wire [`VAL_WIDTH - 1 : 0] res2,
     input wire ready1,
@@ -28,13 +28,13 @@ module loadStoreBuffer#(
 
     // from cdb
     input wire cdbReady,
-    input wire [`ID_WIDTH - 1 : 0] rs_cdb2lab,
+    input wire [`ROB_ID_WIDTH : 0] rs_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
-    input wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab,
+    input wire [`ROB_ID_WIDTH : 0] lsb_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
     // to cdb
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
-    output wire[`ID_WIDTH - 1 : 0] lab2cdb,
+    output wire[`ROB_ID_WIDTH : 0] lab2cdb,
     output wire lsb_cdb_en,
 
     // from memory
@@ -64,11 +64,11 @@ reg [`LSB_ID_WIDTH - 1 : 0] tail;
 reg nodeType [`LSB_SIZE - 1 : 0]; // 0 for load, 1 for store12
 reg [`OP_WIDTH - 1 : 0] orderType;
 reg busy [0 : `LSB_SIZE - 1];
-reg [`ID_WIDTH - 1 : 0] entry [0 : `LSB_SIZE - 1]; // index in rob
+reg [`ROB_ID_WIDTH : 0] entry [0 : `LSB_SIZE - 1]; // index in rob
 reg [`VAL_WIDTH - 1 : 0] V1 [0 : `LSB_SIZE - 1];
 reg [`VAL_WIDTH - 1 : 0] V2 [0 : `LSB_SIZE - 1];
-reg [`VAL_WIDTH - 1 : 0] Q1 [0 : `LSB_SIZE - 1];
-reg [`VAL_WIDTH - 1 : 0] Q2 [0 : `LSB_SIZE - 1];
+reg [`ROB_ID_WIDTH : 0] Q1 [0 : `LSB_SIZE - 1];
+reg [`ROB_ID_WIDTH : 0] Q2 [0 : `LSB_SIZE - 1];
 reg [`ADDR_WIDTH - 1 : 0] addr [0 : `LSB_SIZE - 1];
 reg [`VAL_WIDTH - 1 : 0] res [0 : `LSB_SIZE - 1];
 reg [1 : 0] status [0 : `LSB_SIZE - 1];
@@ -81,7 +81,7 @@ assign isFull = (head == tail);
 reg reg_lsb2mem_store_en;
 reg reg_lsb2mem_load_en;
 reg [`LSB_ID_WIDTH - 1 : 0] reg_commit_id;
-reg [`ID_WIDTH - 1 : 0] reg_lab2cdb;
+reg [`ROB_ID_WIDTH : 0] reg_lab2cdb;
 reg [`VAL_WIDTH - 1 : 0] reg_val2cdb;
 reg [`LSB_ID_WIDTH - 1 : 0] reg_mem2lsb_load_id;
 
@@ -106,8 +106,8 @@ always @(posedge clk) begin
     end
     else if (rdy_in) begin
         // issue
-        if (!isFull && dec2lsb_en) begin
-            tail = (tail == `LSB_SIZE - 1) ? 0 : tail + 1;
+        if (dec2lsb_en) begin
+            tail = tail + 1;
             entry[tail] <= newTag;
             busy[tail] <= 1;
             orderType[tail] <= type;
@@ -173,7 +173,7 @@ always @(posedge clk) begin
         // load or store
         // pop the first node and FIFO ensures that load&store are in time order
         if (!mem_busy) begin
-            reg_commit_id <= (head == `LSB_SIZE - 1) ? 0 : head + 1;
+            reg_commit_id <= head + 1;
             reg_lsb2mem_store_en <= 0;
             reg_lsb2mem_load_en <= 0;
             if (nodeType[reg_commit_id] && status[reg_commit_id] == STATUS_EXE) begin

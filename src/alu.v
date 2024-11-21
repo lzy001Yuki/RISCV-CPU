@@ -8,12 +8,12 @@ module alu(
     input wire [`OP_WIDTH - 1 : 0] type,
     input wire [`VAL_WIDTH - 1 : 0] val1, 
     input wire [`VAL_WIDTH - 1 : 0] val2,
-    input wire [`ID_WIDTH - 1 : 0] entry,
+    input wire [`ROB_ID_WIDTH : 0] entry,
     input wire [`ADDR_WIDTH - 1 : 0] nowPC,
 
     // connect to rs & rob
     output wire aluReady,
-    output wire [`ID_WIDTH - 1 : 0] entry_out,
+    output wire [`ROB_ID_WIDTH : 0] entry_out,
     output wire [`VAL_WIDTH - 1 : 0] val_out,
 
     // to ifetch
@@ -21,7 +21,7 @@ module alu(
     output wire alu2if_con
 );
 
-reg [`ID_WIDTH - 1 : 0] reg_entry;
+reg [`ROB_ID_WIDTH : 0] reg_entry;
 reg [`VAL_WIDTH - 1 : 0] val_out_reg;
 reg ready;
 reg [2 : 0] typeSign;

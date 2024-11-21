@@ -30,6 +30,7 @@ module memory(
     output wire [`INDEX_WIDTH - 1 : 0] mem2cache_idx,
     output wire [`TAG_WIDTH - 1 : 0] mem2cache_tag,
     output wire mem2cache_upd,
+    output wire [`ADDR_WIDTH - 1 : 0] mem2cache_PC,
 
     // to ifetch
     output wire mem_rdy,
@@ -103,7 +104,7 @@ always @(posedge clk) begin
                         current_data <= lsb2mem_val[15 : 8];
                     end                        
                     else begin
-                        current_addr <= 0;
+                        current_addr <= (reg_addr[17 : 16] == 2'b11) ? 0 : reg_addr;
                         current_status <= 2'b00;
                         current_data <= 0;
                         current_rw <= 0;
@@ -179,6 +180,9 @@ always @(posedge clk) begin
             end
         endcase
     end
+
+    // to do : continue instruction fetch when no operation in process
+    // else if (mem_work_type == 2'b00)
     
 end
 
@@ -189,7 +193,8 @@ assign mem2lsb_load_val = lsb2mem_store_load ? load_result(lsb2mem_type, current
 assign mem2lsb_upd = cache_finish;
 assign mem_rdy = cache_finish;
 assign mem2if_inst_out = (mem_work_type == 2'b10) ? load_result(3'b010, current_res, mem_din) : 0;
-assign mem2cache_idx = cache_finish ? mem2if_inst_out[7 : 4] : 0;
-assign mem2cache_tag = cache_finish ? mem2if_inst_out[31 : 8] : 0;
+assign mem2cache_idx = cache_finish ? reg_addr[5 : 1] : 0;
+assign mem2cache_tag = cache_finish ? reg_addr[31 : 6] : 0;
+assign mem2cache_PC = cache_finish ? reg_addr : 0;
 
 endmodule

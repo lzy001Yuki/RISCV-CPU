@@ -14,34 +14,32 @@ module reorderBuffer(
     input wire dec2rob_en,
 
     // from rf
-    input wire [`ID_WIDTH - 1 : 0] rf_label1,
-    input wire [`ID_WIDTH - 1 : 0] rf_label2,
+    input wire [`ROB_ID_WIDTH : 0] rf_label1,
+    input wire [`ROB_ID_WIDTH: 0] rf_label2,
     input wire [`VAL_WIDTH - 1 : 0] rf_val1,
     input wire [`VAL_WIDTH - 1 : 0] rf_val2,
 
     // to rf
-    output wire [`REG_WIDTH - 1 : 0] rob2rf_rd,
-    output wire [`ID_WIDTH - 1 : 0] rob2rf_tag,
     output wire [`REG_WIDTH - 1 : 0] commit_rd,
     output wire [`VAL_WIDTH - 1 : 0] commit_res,
-    output wire [`ID_WIDTH - 1 : 0] commit_lab,
+    output wire [`ROB_ID_WIDTH : 0] commit_lab,
 
     // from rs
     input wire rsFull,
     // to rs
-    output wire [`ID_WIDTH - 1 : 0] label1,
-    output wire [`ID_WIDTH - 1 : 0] label2,
+    output wire [`ROB_ID_WIDTH: 0] label1,
+    output wire [`ROB_ID_WIDTH : 0] label2,
     output wire [`VAL_WIDTH - 1 : 0] res1, //from rob or regFile
     output wire [`VAL_WIDTH - 1 : 0] res2,
     output wire ready1,
     output wire ready2,
-    output wire [`ID_WIDTH - 1 : 0] newTag, // to rs
+    output wire [`ROB_ID_WIDTH : 0] newTag, // to rs
 
     // from cdb
     input wire cdbReady,
-    input wire [`ID_WIDTH - 1 : 0] rs_cdb2lab,
+    input wire [`ROB_ID_WIDTH : 0] rs_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
-    input wire [`ID_WIDTH - 1 : 0] lsb_cdb2lab,
+    input wire [`ROB_ID_WIDTH : 0] lsb_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
 
     output wire robFull,
@@ -62,14 +60,14 @@ module reorderBuffer(
 
 // consider simplify register use????
 
-reg [`ID_WIDTH - 1 : 0] tag;
+reg [`ROB_ID_WIDTH : 0] tag;
 reg [`ROB_ID_WIDTH - 1 : 0] head;
 reg [`ROB_ID_WIDTH - 1 : 0] tail;
 reg ready [0 : `ROB_SIZE - 1];
 reg [`VAL_WIDTH - 1 : 0] res [0 : `ROB_SIZE - 1]; // res_val 
 reg [`ADDR_WIDTH - 1 : 0] nowPC [0 : `ROB_SIZE - 1];
 reg [`REG_WIDTH - 1 : 0] dest [0 : `ROB_SIZE - 1]; //rd
-reg [`ID_WIDTH - 1 : 0] label [0 : `ROB_SIZE - 1];
+reg [`ROB_ID_WIDTH : 0] label [0 : `ROB_SIZE - 1];
 reg [`ADDR_WIDTH - 1 : 0] jump [0 : `ROB_SIZE - 1]; // jump_address if jump
 reg [`OP_WIDTH - 1 : 0] reg_instType;
 reg reg_flush;
@@ -79,7 +77,7 @@ reg [`ADDR_WIDTH - 1 : 0] reg_newPC;
 reg reg_update;
 reg [`REG_WIDTH - 1 : 0] reg_commit_rd;
 reg [`VAL_WIDTH - 1 : 0] reg_commit_res;
-reg [`ID_WIDTH - 1 : 0] reg_commit_lab;
+reg [`ROB_ID_WIDTH: 0] reg_commit_lab;
 
 integer i;
 
@@ -101,13 +99,13 @@ always @(posedge clk) begin
     else if (rdy_in) begin
         // issue
         reg_instType <= inst;
-        if (!rsFull && dec2rob_en) begin
-            tail <= (tail != `ROB_SIZE - 1) ? tail + 1 : 0;
+        if (dec2rob_en) begin
+            tail <= tail + 1;
             nowPC[tail] <= curPC;
             jump[tail] <= jump_addr; // 0 or true addr
             dest[tail] <= dest_rd;
             label[tail] <= tag;
-            tag <= (tag != `ROB_SIZE) ? tag + 1 : 0;
+            tag <= (tag != `ROB_SIZE) ? tag + 1 : 1;
         end
         // fetchData
         if (cdbReady) begin
@@ -121,7 +119,7 @@ always @(posedge clk) begin
 
         // commit
         if ((head != `ROB_SIZE - 1 && ready[head + 1]) || (head == `ROB_SIZE - 1 && ready[0])) begin
-            head <= (head != `ROB_SIZE - 1) ? head + 1 : 0;
+            head <= head + 1;
             // consider how to exit????
             if (reg_instType[2 : 0] == `OP_B_TYPE && reg_instType != `OP_JAL) begin
                 reg_update <= 1;
@@ -150,9 +148,7 @@ always @(posedge clk) begin
 end
 
 assign newTag = tag;
-assign rob2rf_tag = tag - 1;
 assign robFull = (head == tail);
-assign rob2rf_rd = dest_rd;
 assign flush_out = reg_flush;
 assign pred_res = reg_pred_res;
 assign rob2pre_curPC = reg_rob2pre_curPC;
@@ -161,8 +157,8 @@ assign newPC = reg_newPC;
 assign commit_rd = reg_commit_rd;
 assign commit_res = reg_commit_res;
 assign commit_lab = reg_commit_lab;
-assign label1 = rf_label1 - 1;
-assign label2 = rf_label2 - 1;
+assign label1 = rf_label1;
+assign label2 = rf_label2;
 assign res1 = rf_label1 ? res[rf_label1 - 1] : rf_val1;
 assign res2 = rf_label2 ? res[rf_label2 - 1] : rf_val2;
 assign ready1 = ready[rf_label1 - 1];

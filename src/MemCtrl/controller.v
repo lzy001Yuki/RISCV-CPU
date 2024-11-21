@@ -42,6 +42,7 @@ wire mem_rdy;
 wire [`INST_WIDTH - 1 : 0] mem2if_inst_out;
 wire cache_rdy;
 wire [`INST_WIDTH - 1 : 0] cache2if_inst_out;
+wire [`ADDR_WIDTH - 1 : 0] mem2cache_PC;
 
 memory mem (
     .clk(clk),
@@ -71,6 +72,7 @@ memory mem (
     .mem2cache_idx(mem2cache_idx),
     .mem2cache_tag(mem2cache_tag),
     .mem2cache_upd(mem2cache_upd),
+    .mem2cache_PC(mem2cache_PC),
 
     .mem_rdy(mem_rdy),
     .mem2if_inst_out(mem2if_inst_out)
@@ -88,6 +90,7 @@ icache ins_cache(
     .mem2cache_inst(mem2cache_inst),
     .mem2cache_idx(mem2cache_idx),
     .mem2cache_tag(mem2cache_tag),
+    .mem2cache_PC(mem2cache_PC),
     .cache2mem_PC(cache2mem_PC),
     .upd_cache2mem_en(cache2mem_upd_en),
 

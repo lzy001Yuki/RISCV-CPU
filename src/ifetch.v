@@ -22,7 +22,8 @@ module ifetch(
     output wire[`ADDR_WIDTH - 1 : 0] pc_out, // to decode & predictor
     output wire if2pred_en,
     output wire[`ADDR_WIDTH - 1 : 0] next_PC, // to cache
-    output wire next_inst // to cache
+    output wire next_inst // to cache, enable next_inst into ifetch
+    
 );
 reg if_stall;
 reg [`ADDR_WIDTH - 1 : 0] reg_pc_out;
@@ -57,13 +58,27 @@ always @(posedge clk) begin
         reg_pc_out <= 0;
     end
     else if (!if_stall && inst_rdy) begin
-        reg_inst_out <= inst_in;
-        reg_next_PC <= reg_next_PC + 4;
-        reg_pc_out <= reg_next_PC;
-    
-        if (reg_inst_out[6 : 4] == `OP_B_TYPE) begin
-            if_stall <= 1;
+        if (inst_in[1 : 0] == 2'b11) begin
+            reg_inst_out <= inst_in;
+            reg_pc_out <= reg_next_PC;
+            reg_next_PC <= reg_next_PC + 4;
+            if (reg_inst_out[6 : 4] == `OP_B_TYPE) begin
+                if_stall <= 1;
+            end
         end
+        else begin
+            reg_inst_out <= {16'b0, inst_in[15 : 0]};
+            reg_pc_out <= reg_next_PC;
+            reg_next_PC <= reg_next_PC + 2;
+            if (reg_inst_out[1 : 0] == 2'b01 && (reg_inst_out[15 : 13] == 3'b110 || reg_inst_out[15 : 13] == 3'b111
+             || reg_inst_out[15 : 13] == 3'b001 || reg_inst_out[15 : 13] == 3'b101)) begin
+                if_stall <= 1;
+            end
+            if (reg_inst_out[1 : 0] == 2'b10 && !reg_inst_out[6 : 2] && reg_inst_out == 3'b100) begin
+                if_stall <= 1;
+            end
+        end
+
     end
 end
 

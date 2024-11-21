@@ -14,12 +14,11 @@
 `define OP_R_TYPE 3'b011
 `define OP_S_TYPE 3'b010
 
-`define REG_WIDTH 6
+`define REG_WIDTH 5
 `define RS_SIZE 8
 `define REG_SIZE 32
 `define ROB_SIZE 32
-`define ROB_ID_WIDTH 6
-`define ID_WIDTH 5
+`define ROB_ID_WIDTH 5
 `define VAL_WIDTH 32
 `define RS_ID_WIDTH 3
 `define LSB_ID_WIDTH 3
@@ -27,6 +26,6 @@
 `define ICACHE_SIZE 16
 `define BLOCK_SIZE 2
 `define BLOCK_WIDTH 64
-`define TAG_WIDTH 24
+`define TAG_WIDTH 27
 `define INDEX_WIDTH 4
 `define OFFSET_WIDTH 2
