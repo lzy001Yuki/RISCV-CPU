@@ -60,7 +60,7 @@ reg reg_execute;
 integer i;
 
 // find issue_id
-always @(*) begin
+always @(negedge clk) begin
     if (cdbReady) begin
         for (i = 0; i < `RS_SIZE; i++) begin
             if (busy[i]) begin
@@ -73,7 +73,7 @@ always @(*) begin
     end
     issue_id <= 4'b1000;
     exe_id <= 4'b1000;
-    for (i = 0; i < `RS_SIZE; i = i + 1) begin
+    for (i = 0; i < `RS_SIZE; i++) begin
         if (!busy[i] && issue_id == 4'b1000) begin
             issue_id <= i;
         end

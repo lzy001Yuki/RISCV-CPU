@@ -258,8 +258,10 @@ always @*
             end
             d_state = S_DECODE; 
             d_program_finish = 1'b1;
+`ifndef ONLINE_JUDGE
             $display("IO:Return");
-            $finish;
+`endif
+            $finish(0);
           end
         endcase
       end else begin

@@ -1,19 +1,19 @@
 // testbench top module file
 // for simulation only
 
-`timescale 1ns/1ps
+`timescale 1ps/1ps
 module testbench;
 
 reg clk;
 reg rst;
 
 riscv_top #(.SIM(1)) top(
-    .EXCLK(clk),
-    .btnC(rst),
-    .Tx(),
-    .Rx(),
-    .led()
-);
+     .EXCLK(clk),
+     .btnC(rst),
+     .Tx(),
+     .Rx(),
+     .led()
+ );
 
 initial begin
   clk=0;
@@ -26,9 +26,9 @@ initial begin
 end
 
 initial begin
-     $dumpfile("test.vcd");
-     $dumpvars(0, testbench);
-     #300000000 $finish;
+  $dumpfile("test.vcd");
+  $dumpvars(0, testbench);
+  #300000000 $finish;
 end
 
 endmodule
