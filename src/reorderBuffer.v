@@ -85,7 +85,7 @@ always @(posedge clk) begin
     if (rst_in || (reg_flush && rdy_in)) begin
         tag <= 1;
         head <= 0;
-        tail <= 0;
+        tail <= 1;
         for (i = 0; i < `ROB_SIZE; i++) begin
             ready[i] <= 0;
             res[i] <= 0;

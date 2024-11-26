@@ -24,9 +24,6 @@ module alu(
 reg [`ROB_ID_WIDTH : 0] reg_entry;
 reg [`VAL_WIDTH - 1 : 0] val_out_reg;
 reg ready;
-reg [2 : 0] typeSign;
-reg [2 : 0] funcSign;
-reg otherSign;
 reg [`ADDR_WIDTH - 1 : 0] PC;
 reg cont;
 
@@ -35,9 +32,6 @@ always @(posedge clk) begin
         ready <= 0;
         val_out_reg <= 0;
         reg_entry <= 0;
-        typeSign <= 0;
-        funcSign <= 0;
-        otherSign <= 0;
         PC <= 0;
         cont <= 0;
     end
@@ -47,21 +41,18 @@ always @(posedge clk) begin
     else begin
         if (execute) begin
         ready <= 1;
-        typeSign = type[2 : 0];
-        funcSign = type[5 : 3];
-        otherSign = type[6];
         reg_entry <= entry;
         cont <= 0;
-        case (typeSign)
+        case (type[2 : 0])
             `OP_B_TYPE:begin
-                case (funcSign)
+                case (type[5 : 3])
                     3'b000: val_out_reg <= val1 == val2; // beq
                     3'b001: val_out_reg <= val1 != val2; // bne
                     3'b100: val_out_reg <= $signed(val1) < $signed(val2); // blt
                     3'b101: val_out_reg <= $signed(val1) >= $signed(val2); // bge
                     3'b110: val_out_reg <= $unsigned(val1) < $unsigned(val2); // bltu
                     3'b111: begin
-                        case (otherSign)
+                        case (type[6])
                             1'b0: val_out_reg <= $unsigned(val1) >= $unsigned(val2); // bgeu
                             1'b1: val_out_reg <= val1 + val2; //jal
                         endcase
@@ -74,11 +65,11 @@ always @(posedge clk) begin
                 endcase
             end
             `OP_I_TYPE: begin
-                case (funcSign)
+                case (type[5 : 3])
                     3'b000: val_out_reg <= val1 + val2; //addi
                     3'b010: val_out_reg <= $signed(val1) < $signed(val2); // slti
                     3'b011: begin
-                        case (otherSign)
+                        case (type[6])
                             1'b0: val_out_reg <= $unsigned(val1) < $unsigned(val2); // sltiu
                             1'b1: val_out_reg <= val1 + val2; //auipc
                         endcase
@@ -88,7 +79,7 @@ always @(posedge clk) begin
                     3'b111: val_out_reg <= val1 & val2; // ori
                     3'b001: val_out_reg <= (val1 << val2); // slli
                     3'b101: begin
-                        case (otherSign)
+                        case (type[6])
                             1'b0: val_out_reg <= val1 >> val2; // srli
                             1'b1: val_out_reg <= $signed(val1) >> val2; // srai
                         endcase
@@ -98,9 +89,9 @@ always @(posedge clk) begin
             `OP_L_TYPE: val_out_reg <= val1 + val2; // lb, lh, lw, lbu, lhu  be caseful--> 'u' means that data fetched from memory is unsigned
             `OP_S_TYPE: val_out_reg <= val1 + val2; // sb, sh, sw
             `OP_R_TYPE: begin
-                case (funcSign)
+                case (type[5 : 3])
                     3'b000: begin
-                    case (otherSign)
+                    case (type[6])
                         1'b0: val_out_reg <= val1 + val2; // add
                         1'b1: val_out_reg <= val1 - val2; // sub
                     endcase
@@ -108,14 +99,14 @@ always @(posedge clk) begin
                     3'b001: val_out_reg <= val1 << val2; // sll
                     3'b010: val_out_reg <= val1 < val2; // slt
                     3'b011: begin
-                        case (otherSign)
+                        case (type[6])
                             1'b0: val_out_reg <= $unsigned(val1) < $unsigned(val2); // sltu
                             1'b1: val_out_reg <= val1 + val2; //lui
                         endcase
                     end
                     3'b100: val_out_reg <= val1 ^ val2; // xor
                     3'b101: begin
-                        case (otherSign)
+                        case (type[6])
                             1'b0: val_out_reg <= val1 << val2; // sll
                             1'b1: val_out_reg <= val1 >> val2; // srl
                         endcase

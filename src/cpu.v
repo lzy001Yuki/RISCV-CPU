@@ -20,7 +20,7 @@ module cpu(
 
 wire ctrl2if_inst_rdy;
 wire [`INST_WIDTH - 1 : 0] ctrl2if_inst_out;
-wire if2ctrl2_en;
+wire if2ctrl_en;
 wire [`ADDR_WIDTH - 1 : 0] if2ctrl_next_PC;
 
 controller ctrl(
@@ -61,10 +61,12 @@ ifetch ins_fetch(
   .alu2if(rs2if_newPC),
   .rob2if(rob2if_newPC),
   .dec2if(dec2if_pc),
-  .dec2if_en(dec2if_rob_en),
   .alu2if_cont(rs2if_continuous),
   .flush(rob_flush),
   .decUpd(decUpd),
+  .lsbFull(lsbFull),
+  .robFull(robFull),
+  .rsFull(rsFull),
 
   .if2dec(if2dec_en),
   .inst_out(if_inst_out),
@@ -79,7 +81,7 @@ wire rob_flush;
 wire [`INST_WIDTH - 1 : 0] if_inst_out;
 wire [`ADDR_WIDTH - 1 : 0] if_pc_out;
 wire [`ADDR_WIDTH - 1 : 0] dec2if_pc;
-wire dec2if_rob_en;
+wire dec2rob_en;
 wire decUpd;
 
 wire [`OP_WIDTH - 1 : 0] dec_op_out;
@@ -108,11 +110,7 @@ idecode ins_dec(
   .decUpd(decUpd),
   .dec2if_pc(dec2if_pc),
 
-  .lsbFull(lsbFull),
-  .rsFull(rsFull),
-  .robFull(robFull),
-
-  .dec2if_rob_en(dec2if_rob_en),
+  .dec2rob_en(dec2rob_en),
   .dec_inst_curPC(dec_instPC_out),
   .dec2rob_jump_addr(dec2rob_jump_addr),
   .dec2lsb_en(dec2lsb_en),
@@ -158,7 +156,7 @@ reorderBuffer rob(
   .inst(dec_op_out),
   .dest_rd(dec_rd_out),
   .jump_addr(dec2rob_jump_addr),
-  .dec2rob_en(dec2if_rob_en),
+  .dec2rob_en(dec2rob_en),
 
   .rf_label1(rf2rob_lab1),
   .rf_label2(rf2rob_lab2),
@@ -213,7 +211,7 @@ register regFile(
   .flush(rob_flush),
 
   .dec2rf_rd(dec_rd_out),
-  .dec2rob_en(dec2if_rob_en),
+  .dec2rob_en(dec2rob_en),
   .rob2rf_tag(rob_newTag),
   .rob2rf_commit_rd(rob2rf_commit_rd),
   .rob2rf_commit_res(rob2rf_commit_res),

@@ -71,28 +71,28 @@ always @(negedge clk) begin
             end
         end
     end
-    issue_id <= 4'b1000;
-    exe_id <= 4'b1000;
+    issue_id = 4'b1000;
+    exe_id = 4'b1000;
     for (i = 0; i < `RS_SIZE; i++) begin
         if (!busy[i] && issue_id == 4'b1000) begin
-            issue_id <= i;
+            issue_id = i;
         end
         if (busy[i] && !Q1[i] && !Q2[i] && exe_id == 4'b1000) begin
-            exe_id <= i;
-            busy[exe_id] <= 0;
+            exe_id = i;
+            busy[exe_id] = 0;
         end
     end
     if (exe_id == 4'b1000) begin
-        reg_execute <= 0;
+        reg_execute = 0;
     end
     else begin
-        reg_execute <= 1;
+        reg_execute = 1;
     end
     if (issue_id == 4'b1000) begin
-        rsFull <= 1;
+        rsFull = 1;
     end
     else begin
-        rsFull <= 0;
+        rsFull = 0;
     end
 end
 

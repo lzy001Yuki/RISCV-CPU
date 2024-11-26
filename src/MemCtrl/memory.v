@@ -68,6 +68,8 @@ function [`VAL_WIDTH - 1 : 0] load_result;
     endcase
 endfunction
 
+// bugs caused because of initialization....
+
 always @(posedge clk) begin
     mem_work_type <= mem_work_type ? mem_work_type : (lsb2mem_en) ? 2'b01 : (cache2mem_upd_en) ? 2'b10 : 2'b00;
     if (rst_in) begin
@@ -79,7 +81,7 @@ always @(posedge clk) begin
         current_rw <= 0;
         reg_inst_out <= 0;
         reg_addr <= 0;
-        cache_finish <= 1;
+        cache_finish <= 0;
         mem_work_type <= 0;
     end
     else if (!rdy_in) begin
@@ -180,6 +182,14 @@ always @(posedge clk) begin
             end
         endcase
     end
+    else if (mem_work_type == 2'b00) begin
+        if (ready) begin
+            ready <= 0;
+        end
+        if (cache_finish) begin
+            cache_finish <= 0;
+        end
+    end
 
     // to do : continue instruction fetch when no operation in process
     // else if (mem_work_type == 2'b00)
@@ -189,10 +199,10 @@ end
 assign mem_busy = (!mem_work_type) ? 0 : 1;
 assign mem2lsb_load_en = ready && !lsb2mem_store_load;
 assign mem2lsb_load_id = reg_lsb2mem_load_id;
-assign mem2lsb_load_val = lsb2mem_store_load ? load_result(lsb2mem_type, current_res, mem_din) : 0;
+assign mem2lsb_load_val = mem2lsb_load_en ? load_result(lsb2mem_type, current_res, mem_din) : 0;
 assign mem2lsb_upd = cache_finish;
 assign mem_rdy = cache_finish;
-assign mem2if_inst_out = (mem_work_type == 2'b10) ? load_result(3'b010, current_res, mem_din) : 0;
+assign mem2if_inst_out = (cache_finish) ? load_result(3'b010, current_res, mem_din) : 0;
 assign mem2cache_idx = cache_finish ? reg_addr[5 : 1] : 0;
 assign mem2cache_tag = cache_finish ? reg_addr[31 : 6] : 0;
 assign mem2cache_PC = cache_finish ? reg_addr : 0;
