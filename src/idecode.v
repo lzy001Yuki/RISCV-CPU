@@ -223,10 +223,10 @@ always @(posedge clk) begin
                             reg_dec_imm <= {{27{inst_in[12]}}, inst_in[6 : 2]};
                         end
                         3'b011: begin 
-                            reg_orderType <= 7'b0010000;
                             reg_dec_rd <= inst_in[11 : 7];
                             if (reg_dec_rd == 5'b00010) begin // c.addi16sp
                                 reg_dec_rs1 <= reg_dec_rd;
+                                reg_orderType <= 7'b0010000;
                                 reg_dec_imm <= {{23{inst_in[12]}}, inst_in[4 : 3], inst_in[5], inst_in[2], inst_in[6], 4'b0000};
                             end
                             else begin // c.lui
@@ -394,10 +394,10 @@ assign dec_imm = reg_dec_imm;
 assign decUpd = reg_dec2if_pc ? 1 : 0;
 assign dec2if_pc = reg_dec2if_pc;
 assign dec2rob_jump_addr = pred ? reg_dec2if_pc : 0;
-assign dec2if_rob_en = ((opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE && !rsFull)
-|| ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && !lsbFull)) && !robFull ? 1 : 0;
-assign dec2lsb_en = ((opcode[6 : 4] == `OP_L_TYPE || opcode[6 : 4] == `OP_S_TYPE) && !lsbFull) ? 1 : 0;
-assign dec2rs_en = ((opcode[6 : 4] != `OP_L_TYPE && opcode[6 : 4] != `OP_S_TYPE) && !rsFull) ? 1 : 0;
+assign dec2if_rob_en = ((reg_orderType[6 : 4] != `OP_L_TYPE && reg_orderType[6 : 4] != `OP_S_TYPE && !rsFull)
+|| ((reg_orderType[6 : 4] == `OP_L_TYPE || reg_orderType[6 : 4] == `OP_S_TYPE) && !lsbFull)) && !robFull ? 1 : 0;
+assign dec2lsb_en = ((reg_orderType[6 : 4] == `OP_L_TYPE || reg_orderType[6 : 4] == `OP_S_TYPE) && !lsbFull) ? 1 : 0;
+assign dec2rs_en = ((reg_orderType[6 : 4] != `OP_L_TYPE && reg_orderType[6 : 4] != `OP_S_TYPE) && !rsFull) ? 1 : 0;
 assign dec2_inst_curPC = reg_curPC;
 endmodule
 

@@ -9,7 +9,7 @@ module reorderBuffer(
 
     // from decoder
     input wire [`OP_WIDTH - 1 : 0] inst,
-    input wire [`REG_SIZE - 1 : 0] dest_rd,
+    input wire [`REG_WIDTH - 1 : 0] dest_rd,
     input wire [`ADDR_WIDTH - 1: 0] jump_addr,
     input wire dec2rob_en,
 
