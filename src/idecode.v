@@ -226,7 +226,7 @@ always @(posedge clk) begin
                         end
                         3'b011: begin 
                             reg_dec_rd <= inst_in[11 : 7];
-                            if (reg_dec_rd == 5'b00010) begin // c.addi16sp
+                            if (inst_in[11 :7] == 5'b00010) begin // c.addi16sp
                                 reg_dec_rs1 <= 5'b00010;
                                 reg_orderType <= 7'b0010000;
                                 reg_dec_imm <= {{23{inst_in[12]}}, inst_in[4 : 3], inst_in[5], inst_in[2], inst_in[6], 4'b0000};

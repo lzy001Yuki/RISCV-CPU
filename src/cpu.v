@@ -188,6 +188,8 @@ reorderBuffer rob(
   .pred_res(pred_res),
   .rob2pre_curPC(rob2pred_curPC),
   .rob2pred_en(rob2pred_en),
+  .rob2lsb_store_en(rob2lsb_store_en),
+  .store_index(store_index),
 
   .newPC(rob2if_newPC),
   .flush_out(rob_flush),
@@ -277,6 +279,8 @@ wire [`VAL_WIDTH - 1 : 0] lsb2mem_val;
 wire lsb2mem_store_load;
 wire lsb2mem_en;
 wire [`LSB_ID_WIDTH - 1 : 0] lsb2mem_load_id;
+wire rob2lsb_store_en;
+wire [`ROB_ID_WIDTH : 0] store_index;
 
 loadStoreBuffer lsb(
   .clk(clk_in),
@@ -296,6 +300,8 @@ loadStoreBuffer lsb(
   .ready1(rob_ready1),
   .ready2(rob_ready2),
   .newTag(rob_newTag),
+  .rob2lsb_store_en(rob2lsb_store_en),
+  .store_index(store_index),
 
   .cdbReady(cdbReady),
   .rs_cdb2lab(cdb2rs_lab),

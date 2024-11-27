@@ -31,12 +31,15 @@ reg if_stall;
 reg [`ADDR_WIDTH - 1 : 0] reg_pc_out;
 reg [`ADDR_WIDTH - 1 : 0] reg_next_PC;
 reg [`INST_WIDTH - 1 : 0] reg_inst_out;
+reg reg_inst_rdy;
+
 always @(posedge clk) begin
     if (rst_in) begin
         reg_pc_out <= 0;
         reg_next_PC <= 0;
         reg_inst_out <= 0;
         if_stall <= 0;
+        reg_inst_rdy <= 0;
     end
     else if (!rdy_in) begin
         // do nothing
@@ -55,8 +58,10 @@ always @(posedge clk) begin
         if_stall <= 0;
         reg_inst_out <= 0;
         reg_pc_out <= 0;
+        reg_inst_rdy <= 0;
     end
     else if (!if_stall && inst_rdy) begin
+        reg_inst_rdy <= 1;
         if (inst_in[1 : 0] == 2'b11) begin
             reg_inst_out <= inst_in;
             reg_pc_out <= reg_next_PC;
@@ -100,9 +105,10 @@ always @(posedge clk) begin
             else begin
                 if_stall <= rsFull ? 1 : robFull ? 1 : 0;
             end
-
         end
-
+    end
+    else if (reg_inst_rdy) begin
+        reg_inst_rdy <= 0;
     end
 end
 
@@ -110,6 +116,6 @@ assign next_inst = !if_stall; // to cache
 assign pc_out = reg_pc_out;
 assign next_PC = reg_next_PC;
 assign inst_out = reg_inst_out;
-assign if2dec = !if_stall && inst_rdy;
+assign if2dec = reg_inst_rdy;
 
 endmodule

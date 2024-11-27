@@ -55,7 +55,9 @@ module reorderBuffer(
     output wire flush_out,
 
     // from lsb
-    input wire lsbFull
+    input wire lsbFull,
+    output wire rob2lsb_store_en,
+    output wire [`ROB_ID_WIDTH : 0] store_index
 );
 
 // consider simplify register use????
@@ -69,7 +71,6 @@ reg [`ADDR_WIDTH - 1 : 0] nowPC [0 : `ROB_SIZE - 1];
 reg [`REG_WIDTH - 1 : 0] dest [0 : `ROB_SIZE - 1]; //rd
 reg [`ROB_ID_WIDTH : 0] label [0 : `ROB_SIZE - 1];
 reg [`ADDR_WIDTH - 1 : 0] jump [0 : `ROB_SIZE - 1]; // jump_address if jump
-reg [`OP_WIDTH - 1 : 0] reg_instType;
 reg reg_flush;
 reg reg_pred_res;
 reg [`ADDR_WIDTH - 1 : 0] reg_rob2pre_curPC;
@@ -78,10 +79,23 @@ reg reg_update;
 reg [`REG_WIDTH - 1 : 0] reg_commit_rd;
 reg [`VAL_WIDTH - 1 : 0] reg_commit_res;
 reg [`ROB_ID_WIDTH: 0] reg_commit_lab;
+reg reg_rob2lsb_store_en;
+reg [`ROB_ID_WIDTH : 0] reg_store_index;
+reg [31 : 0] counter;
+initial begin
+    counter = 0;
+end
 
 integer i;
 
 always @(posedge clk) begin
+        counter <= counter + 1;
+    if (32'd47 <= counter && counter <= 32'd55) begin
+            $display("time----> %d", counter);
+    for (i = 0; i < `ROB_SIZE; i++) begin
+            $display("%d, label=%d, ready=%d, res=%d", i, label[i], ready[i], res[i]);
+             end
+         end
     if (rst_in || (reg_flush && rdy_in)) begin
         tag <= 1;
         head <= 0;
@@ -98,7 +112,6 @@ always @(posedge clk) begin
     end
     else if (rdy_in) begin
         // issue
-        reg_instType <= inst;
         if (dec2rob_en) begin
             tail <= tail + 1;
             nowPC[tail] <= curPC;
@@ -118,10 +131,10 @@ always @(posedge clk) begin
         end
 
         // commit
-        if ((head != `ROB_SIZE - 1 && ready[head + 1]) || (head == `ROB_SIZE - 1 && ready[0])) begin
+        if (ready[head + 1]) begin
             head <= head + 1;
             // consider how to exit????
-            if (reg_instType[2 : 0] == `OP_B_TYPE && reg_instType != `OP_JAL) begin
+            if (inst[6 : 4] == `OP_B_TYPE && inst != `OP_JAL) begin
                 reg_update <= 1;
                 if ((res[head] && jump[head]) || (!res[head] && !jump[head])) begin
                     reg_pred_res <= 1;
@@ -135,7 +148,7 @@ always @(posedge clk) begin
                     reg_flush <= 1;
                 end
             end 
-            else if (reg_instType[2 : 0] != `OP_S_TYPE && reg_instType[2 : 0] != `OP_B_TYPE && reg_instType != `OP_LUI && reg_instType != `OP_AUIPC && reg_instType !=`OP_JAL) begin
+            else if (inst[6 : 4] != `OP_S_TYPE && inst != `OP_LUI && inst != `OP_AUIPC) begin
                 reg_update <= 0;
                 if (dest[head]) begin
                     reg_commit_rd <= dest[head];
@@ -143,8 +156,12 @@ always @(posedge clk) begin
                     reg_commit_lab <= label[head];
                 end
             end
+            else if (inst[6 : 4] == `OP_S_TYPE) begin
+                reg_rob2lsb_store_en <= 1;
+                reg_store_index <= head + 1;
+            end
         end
-    end
+    end  
 end
 
 assign newTag = tag;
@@ -159,8 +176,10 @@ assign commit_res = reg_commit_res;
 assign commit_lab = reg_commit_lab;
 assign label1 = rf_label1;
 assign label2 = rf_label2;
-assign res1 = rf_label1 ? res[rf_label1 - 1] : rf_val1;
-assign res2 = rf_label2 ? res[rf_label2 - 1] : rf_val2;
-assign ready1 = ready[rf_label1 - 1];
-assign ready2 = ready[rf_label2 - 1];
+assign res1 = rf_label1 ? res[rf_label1] : rf_val1;
+assign res2 = rf_label2 ? res[rf_label2] : rf_val2;
+assign ready1 = rf_label1 ? ready[rf_label1] : 1;
+assign ready2 = rf_label2 ? ready[rf_label2] : 1;
+assign rob2lsb_store_en = reg_rob2lsb_store_en;
+assign store_index = reg_store_index;
 endmodule

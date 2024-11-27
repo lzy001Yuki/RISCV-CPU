@@ -43,6 +43,11 @@ wire [`INST_WIDTH - 1 : 0] mem2if_inst_out;
 wire cache_rdy;
 wire [`INST_WIDTH - 1 : 0] cache2if_inst_out;
 wire [`ADDR_WIDTH - 1 : 0] mem2cache_PC;
+wire is_c_inst;
+wire [`TAG_WIDTH - 1 : 0] sec_inst_tag;
+wire [`ADDR_WIDTH - 1 : 0] sec_inst_addr;
+wire [`INDEX_WIDTH - 1 : 0] sec_inst_index;
+
 
 memory mem (
     .clk(clk),
@@ -65,10 +70,13 @@ memory mem (
     .mem_busy(mem_busy),
     .mem2lsb_load_id(mem2lsb_load_id),
     .mem2lsb_load_val(mem2lsb_load_val),
+    .is_c_inst(is_c_inst),
+    .sec_inst_tag(sec_inst_tag),
+    .sec_inst_index(sec_inst_index),
+    .sec_inst_addr(sec_inst_addr),
 
     .cache2mem_upd_en(cache2mem_upd_en),
     .cache2mem_PC(cache2mem_PC),
-    .mem2cache_inst(mem2cache_inst),
     .mem2cache_idx(mem2cache_idx),
     .mem2cache_tag(mem2cache_tag),
     .mem2cache_upd(mem2cache_upd),
@@ -87,12 +95,17 @@ icache ins_cache(
     .next_PC(next_PC),
 
     .update(mem2cache_upd),
-    .mem2cache_inst(mem2cache_inst),
+    .mem2cache_inst(mem2if_inst_out),
     .mem2cache_idx(mem2cache_idx),
     .mem2cache_tag(mem2cache_tag),
     .mem2cache_PC(mem2cache_PC),
     .cache2mem_PC(cache2mem_PC),
     .upd_cache2mem_en(cache2mem_upd_en),
+    .is_c_inst(is_c_inst),
+    .sec_inst_tag(sec_inst_tag),
+    .sec_inst_index(sec_inst_index),
+    .sec_inst_addr(sec_inst_addr),
+
 
     .cache_rdy(cache_rdy),
     .next_inst_out(cache2if_inst_out)
