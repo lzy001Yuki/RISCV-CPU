@@ -22,7 +22,7 @@ ifndef name
 endif
 
 build_sim: $(SIM_DIR)/testbench.v $(V_SOURCES)
-	@cd $(SRC_DIR) && iverilog -o $(TESTSPACE_DIR)/test $(SIM_DIR)/testbench.v $(V_SOURCES)
+	@cd $(SRC_DIR) && iverilog -o $(TESTSPACE_DIR)/test  $(SIM_DIR)/testbench.v $(V_SOURCES)
 
 build_sim_test: _no_testcase_name_check
 	@cp $(SIM_TESTCASE_DIR)/*$(name)*.c $(TESTSPACE_DIR)/test.c
@@ -45,7 +45,6 @@ run_sim: build_sim build_sim_test
 # add your own test script here
 # Example:
 #	diff ./test/test.ans ./test/test.out
-
 
 fpga_device := /dev/ttyUSB1
 fpga_run_mode := -I # or -T

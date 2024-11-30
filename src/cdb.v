@@ -7,23 +7,24 @@ module cdb(
     input wire flush,
     input rs_cdb_enin,
     input lsb_cdb_enin,
-    input wire [`ROB_ID_WIDTH : 0] rs_cdb2lab_in,
+    input wire [`ROB_ID_WIDTH - 1: 0] rs_cdb2lab_in,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val_in,
-    input wire [`ROB_ID_WIDTH : 0] lsb_cdb2lab_in,
+    input wire [`ROB_ID_WIDTH - 1: 0] lsb_cdb2lab_in,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val_in,
 
-    output cdbReady,
-    output wire [`ROB_ID_WIDTH : 0] rs_cdb2lab_out,
+    output wire rs_cdb_en,
+    output wire lsb_cdb_en,
+    output wire [`ROB_ID_WIDTH - 1: 0] rs_cdb2lab_out,
     output wire [`VAL_WIDTH - 1 : 0] rs_cdb2val_out,
-    output wire [`ROB_ID_WIDTH : 0] lsb_cdb2lab_out,
+    output wire [`ROB_ID_WIDTH - 1: 0] lsb_cdb2lab_out,
     output wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val_out
 );
 
 reg reg_rs_en;
 reg reg_lsb_en;
-reg [`ROB_ID_WIDTH : 0] reg_rs_lab;
+reg [`ROB_ID_WIDTH - 1: 0] reg_rs_lab;
 reg [`VAL_WIDTH - 1 : 0] reg_rs_val;
-reg [`ROB_ID_WIDTH : 0] reg_lsb_lab;
+reg [`ROB_ID_WIDTH - 1: 0] reg_lsb_lab;
 reg [`VAL_WIDTH - 1 : 0] reg_lsb_val;
 
 always @(*) begin
@@ -49,7 +50,8 @@ always @(posedge clk) begin
     end
 end
 
-assign cdbReady = reg_rs_en || reg_lsb_en;
+assign rs_cdb_en = reg_rs_en;
+assign lsb_cdb_en = reg_lsb_en;
 assign rs_cdb2lab_out = reg_rs_lab;
 assign rs_cdb2val_out = reg_rs_val;
 assign lsb_cdb2lab_out = reg_lsb_lab;

@@ -29,6 +29,8 @@ controller ctrl(
   .rdy_in(rdy_in),
 
   .io_buffer_full(io_buffer_full),
+
+  .flush(rob_flush),
   .mem_din(mem_din),
   .mem_rw(mem_wr),
   .mem_aout(mem_a),
@@ -43,8 +45,9 @@ controller ctrl(
   .mem2lsb_load_en(mem2lsb_load_en),
   .lsb2mem_addr(lsb2mem_addr),
   .lsb2mem_type(lsb2mem_type),
-  .lsb2mem_store_load(lsb2mem_store_load),
-  .lsb2mem_en(lsb2mem_en),
+  .lsb2mem_val(lsb2mem_val),
+  .lsb2mem_store_en(lsb2mem_store_en),
+  .lsb2mem_load_en(lsb2mem_load_en),
   .lsb2mem_load_id(lsb2mem_load_id),
   .inst_rdy(ctrl2if_inst_rdy),
   .inst_out(ctrl2if_inst_out)
@@ -109,6 +112,8 @@ idecode ins_dec(
   .dec_imm(dec_imm_out),
   .decUpd(decUpd),
   .dec2if_pc(dec2if_pc),
+  .dec_inst(dec_inst),
+  .dec2rob_pred(dec2rob_pred),
 
   .dec2rob_en(dec2rob_en),
   .dec_inst_curPC(dec_instPC_out),
@@ -117,6 +122,7 @@ idecode ins_dec(
   .dec2rs_en(dec2rs_en)
 );
 
+wire dec2rob_pred;
 wire if2pred_en;
 wire prediction;
 
@@ -134,29 +140,35 @@ predictor pred(
 );
 
 wire robFull;
-wire [`ROB_ID_WIDTH : 0] rob_label1;
-wire [`ROB_ID_WIDTH : 0] rob_label2;
+wire [`ROB_ID_WIDTH - 1: 0] rob_label1;
+wire [`ROB_ID_WIDTH - 1: 0] rob_label2;
 wire [`VAL_WIDTH - 1 : 0] rob_res1;
 wire [`VAL_WIDTH - 1 : 0] rob_res2;
 wire rob_ready1;
 wire rob_ready2;
-wire [`ROB_ID_WIDTH : 0] rob_newTag;
+wire [`ROB_ID_WIDTH - 1: 0] rob_newTag;
 wire [`ADDR_WIDTH - 1 : 0] dec_instPC_out;
 wire [`ADDR_WIDTH - 1 : 0] rob2if_newPC;
 wire rob2pred_en;
 wire [`ADDR_WIDTH - 1 : 0] rob2pred_curPC;
 wire pred_res;
 wire [`ADDR_WIDTH - 1 : 0] dec2rob_jump_addr;
+
+wire [`INST_WIDTH - 1 : 0] dec_inst;
+
 reorderBuffer rob(
   .clk(clk_in),
   .rst_in(rst_in),
   .rdy_in(rdy_in),
 
   .curPC(dec_instPC_out),
+  .mem_busy(mem_busy),
   .inst(dec_op_out),
   .dest_rd(dec_rd_out),
   .jump_addr(dec2rob_jump_addr),
   .dec2rob_en(dec2rob_en),
+  .dec2rob_pred(dec2rob_pred),
+  .instruction(dec_inst),
 
   .rf_label1(rf2rob_lab1),
   .rf_label2(rf2rob_lab2),
@@ -177,7 +189,8 @@ reorderBuffer rob(
   .ready2(rob_ready2),
   .newTag(rob_newTag),
 
-  .cdbReady(cdbReady),
+  .rs_cdb_en(rs_cdb_en),
+  .lsb_cdb_en(lsb_cdb_en),
   .rs_cdb2lab(cdb2rs_lab),
   .rs_cdb2val(cdb2rs_val),
   .lsb_cdb2lab(cdb2lsb_lab),
@@ -199,11 +212,11 @@ reorderBuffer rob(
 
 wire [`REG_WIDTH - 1 : 0] rob2rf_commit_rd;
 wire [`VAL_WIDTH - 1 : 0] rob2rf_commit_res;
-wire [`ROB_ID_WIDTH : 0] rob2rf_commit_lab;
+wire [`ROB_ID_WIDTH - 1: 0] rob2rf_commit_lab;
 wire [`VAL_WIDTH - 1 : 0] rf2rob_val1;
 wire [`VAL_WIDTH - 1 : 0] rf2rob_val2;
-wire [`ROB_ID_WIDTH : 0] rf2rob_lab1;
-wire [`ROB_ID_WIDTH : 0] rf2rob_lab2;
+wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab1;
+wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab2;
 
 register regFile(
   .clk(clk_in),
@@ -255,7 +268,8 @@ reservationStation rs(
   .ready2(rob_ready2),
   .newTag(rob_newTag),
 
-  .cdbReady(cdbReady),
+  .rs_cdb_en(rs_cdb_en),
+  .lsb_cdb_en(lsb_cdb_en),
   .rs_cdb2lab(cdb2rs_lab),
   .rs_cdb2val(cdb2rs_val),
   .lsb_cdb2lab(cdb2lsb_lab),
@@ -273,14 +287,14 @@ wire [`LSB_ID_WIDTH - 1 : 0] mem2lsb_load_id;
 wire [`VAL_WIDTH - 1 : 0] mem2lsb_load_val;
 wire mem_busy;
 wire mem2lsb_load_en;
-wire [`ADDR_WIDTH - 1 - 1 : 0] lsb2mem_addr;
+wire [`ADDR_WIDTH - 1 : 0] lsb2mem_addr;
 wire [`FUNCT3_WIDTH - 1 : 0] lsb2mem_type;
 wire [`VAL_WIDTH - 1 : 0] lsb2mem_val;
-wire lsb2mem_store_load;
-wire lsb2mem_en;
+wire lsb2mem_store_en;
+wire lsb2mem_load_en;
 wire [`LSB_ID_WIDTH - 1 : 0] lsb2mem_load_id;
 wire rob2lsb_store_en;
-wire [`ROB_ID_WIDTH : 0] store_index;
+wire [`ROB_ID_WIDTH - 1: 0] store_index;
 
 loadStoreBuffer lsb(
   .clk(clk_in),
@@ -303,7 +317,8 @@ loadStoreBuffer lsb(
   .rob2lsb_store_en(rob2lsb_store_en),
   .store_index(store_index),
 
-  .cdbReady(cdbReady),
+  .rs_cdb_en(rs_cdb_en),
+  .cdb2lsb_en(lsb_cdb_en),
   .rs_cdb2lab(cdb2rs_lab),
   .rs_cdb2val(cdb2rs_val),
   .lsb_cdb2lab(cdb2lsb_lab),
@@ -319,22 +334,24 @@ loadStoreBuffer lsb(
   .mem2lsb_load_en(mem2lsb_load_en),
   .lsb2mem_addr(lsb2mem_addr),
   .lsb2mem_type(lsb2mem_type),
-  .lsb2mem_store_load(lsb2mem_store_load),
-  .lsb2mem_en(lsb2mem_en),
-  .lsb2mem_load_id(lsb2mem_load_id)
+  .lsb2mem_load_en(lsb2mem_load_en),
+  .lsb2mem_store_en(lsb2mem_store_en),
+  .lsb2mem_load_id(lsb2mem_load_id),
+  .lsb2mem_val(lsb2mem_val)
 
 );
 
-wire cdbReady;
+wire rs_cdb_en;
+wire lsb_cdb_en;
 wire rs2cdb_en;
 wire lsb2cdb_en;
-wire [`ROB_ID_WIDTH : 0] rs2cdb_lab;
+wire [`ROB_ID_WIDTH - 1: 0] rs2cdb_lab;
 wire [`VAL_WIDTH - 1 : 0] rs2cdb_val;
-wire [`ROB_ID_WIDTH : 0] lsb2cdb_lab;
+wire [`ROB_ID_WIDTH - 1: 0] lsb2cdb_lab;
 wire [`VAL_WIDTH - 1 : 0] lsb2cdb_val;
-wire [`ROB_ID_WIDTH : 0] cdb2rs_lab;
+wire [`ROB_ID_WIDTH - 1: 0] cdb2rs_lab;
 wire [`VAL_WIDTH - 1 : 0] cdb2rs_val;
-wire [`ROB_ID_WIDTH : 0] cdb2lsb_lab;
+wire [`ROB_ID_WIDTH - 1: 0] cdb2lsb_lab;
 wire [`VAL_WIDTH - 1 : 0] cdb2lsb_val;
 
 cdb cdbus(
@@ -350,7 +367,8 @@ cdb cdbus(
   .lsb_cdb2lab_in(lsb2cdb_lab),
   .lsb_cdb2val_in(lsb2cdb_val),
 
-  .cdbReady(cdbReady),
+  .rs_cdb_en(rs_cdb_en),
+  .lsb_cdb_en(lsb_cdb_en),
   .rs_cdb2lab_out(cdb2rs_lab),
   .rs_cdb2val_out(cdb2rs_val),
   .lsb_cdb2lab_out(cdb2lsb_lab),

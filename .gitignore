@@ -11,3 +11,5 @@ fpga/
 script/
 testcase/
 testspace/
+
+output.txt

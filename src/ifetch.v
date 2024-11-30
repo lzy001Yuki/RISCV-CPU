@@ -28,6 +28,9 @@ module ifetch(
     
 );
 reg if_stall;
+reg rs_stall;
+reg lsb_stall;
+reg rob_stall;
 reg [`ADDR_WIDTH - 1 : 0] reg_pc_out;
 reg [`ADDR_WIDTH - 1 : 0] reg_next_PC;
 reg [`INST_WIDTH - 1 : 0] reg_inst_out;
@@ -60,55 +63,61 @@ always @(posedge clk) begin
         reg_pc_out <= 0;
         reg_inst_rdy <= 0;
     end
-    else if (!if_stall && inst_rdy) begin
+    else if (!if_stall && inst_rdy && !lsb_stall && !rs_stall && !rob_stall) begin
         reg_inst_rdy <= 1;
         if (inst_in[1 : 0] == 2'b11) begin
             reg_inst_out <= inst_in;
             reg_pc_out <= reg_next_PC;
-            reg_next_PC <= reg_next_PC + 4;
             if (inst_in[6 : 4] == `OP_B_TYPE) begin
                 if_stall <= 1;
             end
             else if (inst_in[6 : 4] == `OP_L_TYPE || inst_in[6 : 4] == `OP_S_TYPE) begin
-                if_stall <= (lsbFull) ? 1 : 0;
+                lsb_stall <= (lsbFull) ? 1 : 0;
             end
             else if (!inst_in[6 : 4] == `OP_L_TYPE && !inst_in[6 : 4] == `OP_S_TYPE) begin
-                if_stall <= (rsFull) ? 1 : 0;
+                rs_stall <= (rsFull) ? 1 : 0;
             end
-            else begin
-                if_stall <= robFull ? 1 : 0;
+            else if (robFull) begin
+                rob_stall <= robFull ? 1 : 0;
             end
+            reg_next_PC <= reg_next_PC + 4;
         end
         else begin
             reg_inst_out <= {16'b0, inst_in[15 : 0]};
             reg_pc_out <= reg_next_PC;
-            reg_next_PC <= reg_next_PC + 2;
             if (inst_in[1 : 0] == 2'b01 && (inst_in[15 : 13] == 3'b110 || inst_in[15 : 13] == 3'b111
-             || reg_inst_out[15 : 13] == 3'b001 || inst_in[15 : 13] == 3'b101)) begin
+             || inst_in[15 : 13] == 3'b001 || inst_in[15 : 13] == 3'b101)) begin
                 if_stall <= 1;
             end
             else if (inst_in[1 : 0] == 2'b10 && !inst_in[6 : 2] && inst_in[15 : 13] == 3'b100) begin
                 if_stall <= 1;
             end
             else if (inst_in[1 : 0] == 2'b10 && inst_in[15 : 13] == 3'b010) begin
-                if_stall <= lsbFull ? 1 : 0;
+                lsb_stall <= lsbFull ? 1 : 0;
             end
             else if (inst_in[1 : 0] == 2'b10 && inst_in[15 : 13] == 3'b110) begin
-                if_stall <= lsbFull ? 1 : 0;
+                lsb_stall <= lsbFull ? 1 : 0;
             end
             else if (inst_in[1 : 0] == 2'b00 && inst_in[15 : 13] == 3'b010) begin
-                if_stall <= lsbFull ? 1 : 0;
+                lsb_stall <= lsbFull ? 1 : 0;
             end
             else if (inst_in[1 : 0] == 2'b00 && inst_in[15 : 13] == 3'b110) begin
-                if_stall <= lsbFull ? 1 : 0;
+                lsb_stall <= lsbFull ? 1 : 0;
             end
-            else begin
-                if_stall <= rsFull ? 1 : robFull ? 1 : 0;
+            else if (rsFull || robFull) begin
+                rs_stall <= rsFull ? 1 : 0;
+                rob_stall <= robFull ? 1 : 0;
             end
+            reg_next_PC <= reg_next_PC + 2;
         end
     end
-    else if (reg_inst_rdy) begin
-        reg_inst_rdy <= 0;
+    else begin
+        if (reg_inst_rdy) begin
+            reg_inst_rdy <= 0;
+        end
+        rob_stall <= rob_stall ? robFull ? 1 : 0 : 0;
+        lsb_stall <= lsb_stall ? lsbFull ? 1 : 0 : 0;
+        rs_stall <= rs_stall ? rsFull ? 1 : 0 : 0;
     end
 end
 
@@ -116,6 +125,6 @@ assign next_inst = !if_stall; // to cache
 assign pc_out = reg_pc_out;
 assign next_PC = reg_next_PC;
 assign inst_out = reg_inst_out;
-assign if2dec = reg_inst_rdy;
+assign if2dec = reg_inst_rdy && !rs_stall && !lsb_stall && !rob_stall;
 
 endmodule

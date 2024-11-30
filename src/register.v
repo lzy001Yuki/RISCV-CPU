@@ -10,14 +10,14 @@ module register(
     //from rob
     input wire [`REG_WIDTH - 1 : 0] dec2rf_rd,
     input wire dec2rob_en, // can issue
-    input wire [`ROB_ID_WIDTH : 0] rob2rf_tag,
+    input wire [`ROB_ID_WIDTH - 1: 0] rob2rf_tag,
     input wire [`REG_WIDTH - 1 : 0] rob2rf_commit_rd,
     input wire [`VAL_WIDTH - 1 : 0] rob2rf_commit_res,
-    input wire [`ROB_ID_WIDTH : 0] rob2rf_commit_lab,
+    input wire [`ROB_ID_WIDTH - 1: 0] rob2rf_commit_lab,
     output wire [`VAL_WIDTH - 1 : 0] rf2rob_val1,
     output wire [`VAL_WIDTH - 1 : 0] rf2rob_val2,
-    output wire [`ROB_ID_WIDTH : 0] rf2rob_lab1,
-    output wire [`ROB_ID_WIDTH : 0] rf2rob_lab2,
+    output wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab1,
+    output wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab2,
 
     // from decoder
     input wire [`REG_WIDTH - 1 : 0] dec2rf_rs1,
@@ -26,9 +26,13 @@ module register(
 );
 
 reg [`VAL_WIDTH - 1 : 0] value [0 : `REG_SIZE - 1];
-reg [`ROB_ID_WIDTH : 0] label [0 : `REG_SIZE - 1];
+reg [`ROB_ID_WIDTH - 1: 0] label [0 : `REG_SIZE - 1];
+reg [31 : 0] counter;
+initial begin
+    counter = 0;
+end
 
-always @(rob2rf_commit_rd && rob2rf_commit_res) begin
+always @(rob2rf_commit_lab) begin
     if (rob2rf_commit_rd) begin
         value[rob2rf_commit_rd] <= rob2rf_commit_res;
         if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
@@ -40,13 +44,21 @@ end
 
 integer i;
 always @(posedge clk) begin
+    counter <= counter + 1;
+    //   if (counter >= `START && counter <= `END_) begin
+    //   for (i = 0; i < `REG_SIZE; i++) begin
+    //           $display("id=%d, label=%d, val=%h", i, label[i], value[i]);
+    //       end
+    //   end
     if (rst_in || (flush && rdy_in)) begin
         for (i = 0; i < `REG_SIZE; i++) begin
-            value[i] <= 0;
             label[i] <= 0;
+            if (rst_in) begin
+                value[i] <= 0;
+            end
         end
     end
-    else if (dec2rob_en) begin
+    else if (dec2rob_en && dec2rf_rd) begin
         label[dec2rf_rd] <= rob2rf_tag;
     end
 end

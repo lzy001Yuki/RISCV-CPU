@@ -6,18 +6,21 @@ module memory(
     input wire rst_in,
 
     input wire io_buffer_full,
+
+    input wire flush,
     input wire [7 : 0] mem_din,
     output wire mem_rw, // 1 for write
     output wire [`ADDR_WIDTH - 1 : 0] mem_aout,
     output wire [7 : 0] mem_dout,
 
     // from lsb
-    input wire [`ADDR_WIDTH - 1 - 1 : 0] lsb2mem_addr,
+    input wire [`ADDR_WIDTH - 1 : 0] lsb2mem_addr,
     input wire [`VAL_WIDTH - 1 : 0] lsb2mem_val,
     input wire [`LSB_ID_WIDTH - 1 : 0] lsb2mem_load_id,
     input wire [`FUNCT3_WIDTH - 1 : 0] lsb2mem_type,
     input wire lsb2mem_en,
-    input wire lsb2mem_store_load,
+    input wire lsb2mem_store_en,
+    input wire lsb2mem_load_en,
     output wire mem2lsb_load_en, // may need some cycles to complish
     output wire mem_busy, // rob & lsb 
     output wire [`LSB_ID_WIDTH - 1 : 0] mem2lsb_load_id,
@@ -48,14 +51,20 @@ reg [1 : 0] current_status;
 reg [7 : 0] current_data;
 reg ready;
 reg [`LSB_ID_WIDTH - 1 : 0] reg_lsb2mem_load_id;
+reg store_or_load;
+reg [`VAL_WIDTH - 1 : 0] reg_lsb2mem_val;
+reg [``FUNCT3_WIDTH - 1 : 0] reg_lsb2mem_type;
 
 reg [`INST_WIDTH - 1 : 0] reg_inst_out;
 reg cache_finish;
-reg reg_mem_busy;
+reg reg_lsb2mem_en;
+initial begin
+    reg_lsb2mem_en = 0;
+end
 // 00 for none, 01 for lsb_working, 10 for ifetch_working, no changes until finished
 
-assign mem_aout = current_status ? current_addr : (lsb2mem_en) ? lsb2mem_addr : cache2mem_PC;
-assign mem_dout = (!current_status && lsb2mem_store_load) ? lsb2mem_val[7 : 0]: current_data;
+assign mem_aout = (lsb2mem_en) ? lsb2mem_addr : current_status ? current_addr : cache2mem_PC;
+assign mem_dout = (lsb2mem_store_en) ? lsb2mem_val[7 : 0]: current_data;
 
 
 function [`VAL_WIDTH - 1 : 0] load_result;
@@ -72,10 +81,16 @@ function [`VAL_WIDTH - 1 : 0] load_result;
 endfunction
 
 // bugs caused because of initialization....
+reg [31 : 0] counter;
+
+initial begin
+    counter = 0;
+end
 
 always @(posedge clk) begin
-    if (rst_in) begin
-        ready <= 1;
+    counter <= counter + 1;
+    if (rst_in || flush) begin
+        ready <= 0;
         current_addr <= 0;
         current_res <= 0;
         current_status <= 0;
@@ -84,25 +99,50 @@ always @(posedge clk) begin
         reg_inst_out <= 0;
         reg_addr <= 0;
         cache_finish <= 0;
-        reg_mem_busy <= 0;
     end
     else if (!rdy_in) begin
         // do nothing
     end
-    else if (lsb2mem_en) begin
-        reg_lsb2mem_load_id <= !lsb2mem_store_load ? lsb2mem_load_id : 0;
-        if (ready) begin
+    else if (lsb2mem_en || reg_lsb2mem_en) begin
+        if (ready || cache_finish) begin
             ready <= 0;
+            cache_finish <= 0;
+            reg_lsb2mem_val <= 0;
+        end
+        //reg_lsb2mem_load_id <= lsb2mem_load_en ? lsb2mem_load_id : 0;
+        if (lsb2mem_en) begin
+            reg_lsb2mem_en <= 1;
+            current_status <= 2'b00;
+            reg_addr <= lsb2mem_addr;
+            current_rw <= lsb2mem_store_en;
+            store_or_load <= lsb2mem_store_en;
+            reg_lsb2mem_val <= lsb2mem_val;
+            reg_lsb2mem_type <= lsb2mem_type;
+            reg_lsb2mem_load_id <= lsb2mem_load_id;
+            if (lsb2mem_type[1 : 0]) begin
+                current_addr <= lsb2mem_addr + 1;
+                current_status <= 2'b01;
+                current_data <= lsb2mem_val[15 : 8];
+            end                        
+            else begin
+                current_addr <= (lsb2mem_addr[17 : 16] == 2'b11) ? 0 : lsb2mem_addr;
+                current_status <= 2'b00;
+                current_data <= 0;
+                current_rw <= 0;
+                reg_lsb2mem_en <= 0;
+                ready <= 1;
+            end
         end
         else begin
             case (current_status) 
                 2'b00: begin
                     reg_addr <= lsb2mem_addr;
-                    current_rw <= lsb2mem_store_load;
-                    if (lsb2mem_type[1 : 0]) begin
+                    current_rw <= lsb2mem_store_en;
+                    store_or_load <= lsb2mem_store_en;
+                    if (reg_lsb2mem_type[1 : 0]) begin
                         current_addr <= lsb2mem_addr + 1;
                         current_status <= 2'b01;
-                        current_data <= lsb2mem_val[15 : 8];
+                        current_data <= reg_lsb2mem_val[15 : 8];
                     end                        
                     else begin
                         current_addr <= (lsb2mem_addr[17 : 16] == 2'b11) ? 0 : reg_addr;
@@ -110,44 +150,47 @@ always @(posedge clk) begin
                         current_data <= 0;
                         current_rw <= 0;
                         ready <= 1;
+                        reg_lsb2mem_en <= 0;
                     end
                 end
                 2'b01: begin
                     current_res[7 : 0] <= mem_din;
-                    if (lsb2mem_type[1 : 0] == 2'b01) begin
+                    if (reg_lsb2mem_type[1 : 0] == 2'b01) begin
                         ready <= 1;
                         current_rw <= 0;
                         current_data <= 0;
                         current_status <= 2'b00;
+                        reg_lsb2mem_en <= 0;
                         current_addr <= 0;
                     end
                     else begin
                         current_status <= 2'b10;
-                        current_data <= lsb2mem_val[23 : 16];
+                        current_data <= reg_lsb2mem_val[23 : 16];
                         current_addr <= reg_addr + 2;
                     end
                 end
                 2'b10: begin
                     current_res[15 : 8] <= mem_din;
                     current_addr <= reg_addr + 3;
-                    current_data <= lsb2mem_val[31 : 24];
+                    current_data <= reg_lsb2mem_val[31 : 24];
                     current_status <= 2'b11;
                 end
                 2'b11: begin
                     current_res[23 : 16] <= mem_din;
                     ready <= 1;
                     current_status <= 2'b00;
+                    reg_lsb2mem_en <= 0;
                     current_rw <= 0;
                     current_addr <= 0;
                     current_data <= 0;
                 end
             endcase
         end
-        reg_mem_busy <= ready ? 0 : 1;
     end
     else if (cache2mem_upd_en) begin
-        if (cache_finish) begin
+        if (cache_finish || ready) begin
             cache_finish <= 0;
+            ready <= 0;
         end
         else begin
         case (current_status) 
@@ -176,7 +219,6 @@ always @(posedge clk) begin
             end
         endcase
         end
-        reg_mem_busy <= cache_finish ? 0 : 1;
     end
 
     // to do : continue instruction fetch when no operation in process
@@ -184,8 +226,8 @@ always @(posedge clk) begin
 end
 assign is_c_inst = cache_finish ? mem2if_inst_out[1 : 0] == 2'b11 ? 0 : 1 : 0;
 
-assign mem_busy = reg_mem_busy;
-assign mem2lsb_load_en = ready && !lsb2mem_store_load;
+assign mem_busy = lsb2mem_en || reg_lsb2mem_en;
+assign mem2lsb_load_en = ready && !store_or_load;
 assign mem2lsb_load_id = reg_lsb2mem_load_id;
 assign mem2lsb_load_val = mem2lsb_load_en ? load_result(lsb2mem_type, current_res, mem_din) : 0;
 assign mem2cache_upd = cache_finish;
@@ -197,5 +239,5 @@ assign mem2cache_PC = cache_finish ? reg_addr : 0;
 assign sec_inst_addr = is_c_inst ? reg_addr + 2 : 0;
 assign sec_inst_tag = sec_inst_addr[31 : 5];
 assign sec_inst_index = sec_inst_addr[4 : 1];
-
+assign mem_rw = lsb2mem_en ? lsb2mem_store_en : current_rw;
 endmodule

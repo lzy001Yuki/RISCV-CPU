@@ -8,6 +8,8 @@ module controller(
 
     input wire io_buffer_full,
 
+    input wire flush,
+
     input wire [7 : 0] mem_din,
     output wire mem_rw, // 1 for write
     output wire [`ADDR_WIDTH - 1 : 0] mem_aout,
@@ -17,12 +19,12 @@ module controller(
     input wire [`ADDR_WIDTH - 1 : 0] next_PC,
 
     // from lsb
-    input wire [`ADDR_WIDTH - 1 - 1 : 0] lsb2mem_addr,
+    input wire [`ADDR_WIDTH - 1 : 0] lsb2mem_addr,
     input wire [`VAL_WIDTH - 1 : 0] lsb2mem_val,
     input wire [`LSB_ID_WIDTH - 1 : 0] lsb2mem_load_id,
     input wire [`FUNCT3_WIDTH - 1 : 0] lsb2mem_type,
-    input wire lsb2mem_en,
-    input wire lsb2mem_store_load,
+    input wire lsb2mem_store_en,
+    input wire lsb2mem_load_en,
     output wire mem2lsb_load_en, // may need some cycles to complish
     output wire mem_busy, // rob & lsb 
     output wire [`LSB_ID_WIDTH - 1 : 0] mem2lsb_load_id,
@@ -48,11 +50,14 @@ wire [`TAG_WIDTH - 1 : 0] sec_inst_tag;
 wire [`ADDR_WIDTH - 1 : 0] sec_inst_addr;
 wire [`INDEX_WIDTH - 1 : 0] sec_inst_index;
 
+wire lsb2mem_en;
+assign lsb2mem_en = lsb2mem_store_en || lsb2mem_load_en;
 
 memory mem (
     .clk(clk),
     .rdy_in(rdy_in),
     .rst_in(rst_in),
+    .flush(flush),
 
     .io_buffer_full(io_buffer_full),
     .mem_din(mem_din),
@@ -65,7 +70,9 @@ memory mem (
     .lsb2mem_load_id(lsb2mem_load_id),
     .lsb2mem_type(lsb2mem_type),
     .lsb2mem_en(lsb2mem_en),
-    .lsb2mem_store_load(lsb2mem_store_load),
+    .lsb2mem_store_en(lsb2mem_store_en),
+    .lsb2mem_load_en(lsb2mem_load_en),
+    
     .mem2lsb_load_en(mem2lsb_load_en),
     .mem_busy(mem_busy),
     .mem2lsb_load_id(mem2lsb_load_id),
