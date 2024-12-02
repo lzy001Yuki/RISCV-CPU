@@ -27,6 +27,9 @@ module loadStoreBuffer#(
     input wire ready2,
     input wire rob2lsb_store_en,
     input wire [`ROB_ID_WIDTH - 1: 0] store_index,
+    input wire commit_en,
+    input wire [`ROB_ID_WIDTH - 1 : 0] commit_lab,
+    input wire [`VAL_WIDTH - 1 : 0] commit_val,
 
     // from cdb
     input wire rs_cdb_en,
@@ -106,13 +109,13 @@ integer i;
 integer flag;
 always @(posedge clk) begin
     counter <= counter + 1;
-    //     if (counter >= `START && counter <= `END_) begin
-    //         $display("time -----------------> %d     lsb", counter);
+         if (counter >= `START && counter <= `END_) begin
+         //$display("time -----------------> %d     lsb", counter);
     //         $display("head=%d, tail=%d", head, tail);
-    // for (i = 0; i < `LSB_SIZE; i++) begin
-    //            $display("entry=%d, V1=%d, V2=%d, busy=%d, status=%d, Q1=%d, Q2=%d", entry[i], V1[i], V2[i], busy[i], status[i], Q1[i], Q2[i]);
-    //     end
-    //     end
+     for (i = 0; i < `LSB_SIZE; i++) begin
+               // $display("entry=%d, V1=%d, V2=%d, busy=%d, status=%d, Q1=%d, Q2=%d", entry[i], V1[i], V2[i], busy[i], status[i], Q1[i], Q2[i]);
+         end
+         end
     if (rst_in || (flush && rdy_in)) begin
         for (i = 0; i < `LSB_SIZE; i = i + 1) begin
             busy[i] <= 0;
@@ -125,6 +128,7 @@ always @(posedge clk) begin
             orderType[i] <= 0;
             head <= 0;
             tail <= 1;
+            status[i] <= 0;
             load_write_id <= 4'b1000;
             store_write_id <= 4'b1000;
             reg_lsb2mem_store_en <= 0;
@@ -213,10 +217,10 @@ always @(posedge clk) begin
             reg_commit_id <= head + 1;
             if (!nodeType[(head == `LSB_SIZE - 1) ? 0 : head + 1] && status[(head == `LSB_SIZE - 1) ? 0 : head + 1] == STATUS_EXE) begin
                 reg_lsb2mem_load_en <= 1;
-                head <= head + 1;
-                busy[(head == `LSB_SIZE - 1) ? 0 : head + 1] <= 0;
                 reg_commit_addr <= addr[(head == `LSB_SIZE - 1) ? 0 : head + 1];
                 reg_commit_type <= orderType[(head == `LSB_SIZE - 1) ? 0 : head + 1];
+                head <= head + 1;
+                busy[(head == `LSB_SIZE - 1) ? 0 : head + 1] <= 0;
             end
         end
         if (rob2lsb_store_en) begin
@@ -232,8 +236,8 @@ always @(posedge clk) begin
         reg_val2cdb <= 0;
         if (mem2lsb_load_en) begin
             reg_mem2lsb_load_id <= mem2lsb_load_id;
-            res[reg_mem2lsb_load_id] <= mem2lsb_load_val;
-            status[reg_mem2lsb_load_id] <= STATUS_WRITE;
+            res[mem2lsb_load_id] <= mem2lsb_load_val;
+            status[mem2lsb_load_id] <= STATUS_WRITE;
             reg_lab2cdb <= entry[mem2lsb_load_id];
             reg_val2cdb <= mem2lsb_load_val;
             reg_lsb2cdb_en <= 1;
@@ -244,6 +248,7 @@ always @(posedge clk) begin
             reg_val2cdb <= res[(head == `LSB_SIZE - 1) ? 0 : head + 1];
             status[(head == `LSB_SIZE - 1) ? 0 : head + 1] <= STATUS_WRITE;
         end
+        
 
 
         // fetch data
@@ -259,13 +264,23 @@ always @(posedge clk) begin
                     Q2[i] = 0;
                 end
                 end
-                else if (cdb2lsb_en) begin
+                if (cdb2lsb_en) begin
                 if (lsb_cdb2lab == Q1[i]) begin
                     V1[i] = nodeType[i] ? lsb_cdb2val + V1[i] : lsb_cdb2val;
                     Q1[i] = 0;
                 end
                 else if (lsb_cdb2lab == Q2[i]) begin
                     V2[i] = lsb_cdb2val;
+                    Q2[i] = 0;
+                end
+                end
+                if (commit_en) begin
+                if (commit_lab == Q1[i]) begin
+                    V1[i] = nodeType[i] ? commit_val + V1[i] : commit_val;
+                    Q1[i] = 0;
+                end
+                else if (commit_lab == Q2[i]) begin
+                    V2[i] = commit_val;
                     Q2[i] = 0;
                 end
                 end

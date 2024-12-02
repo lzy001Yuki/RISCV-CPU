@@ -2,8 +2,8 @@
 module predictor # (
     parameter BHT_WIDTH = 4,
     parameter PHT_WIDTH = 6,
-    parameter PHT_SIZE = 1 << PHT_WIDTH,
-    parameter BHT_SIZE = 1 << BHT_WIDTH
+    parameter PHT_SIZE = 64,
+    parameter BHT_SIZE = 16
 )    (
     input wire clk,
     input wire rdy_in,
@@ -28,7 +28,7 @@ always @(posedge clk) begin
     if (rst_in) begin
         for (i = 0; i < PHT_SIZE; i++) begin
             BHTable[i] = 0;
-            for (j = 0; j < PHT_SIZE; j++) begin
+            for (j = 0; j < BHT_SIZE; j++) begin
                 PHTable[i][j] = 2'b00;
             end
         end

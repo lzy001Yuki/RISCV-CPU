@@ -35,6 +35,7 @@ reg [`ADDR_WIDTH - 1 : 0] reg_pc_out;
 reg [`ADDR_WIDTH - 1 : 0] reg_next_PC;
 reg [`INST_WIDTH - 1 : 0] reg_inst_out;
 reg reg_inst_rdy;
+reg reg_pred_en;
 
 always @(posedge clk) begin
     if (rst_in) begin
@@ -43,6 +44,7 @@ always @(posedge clk) begin
         reg_inst_out <= 0;
         if_stall <= 0;
         reg_inst_rdy <= 0;
+        reg_pred_en <= 0;
     end
     else if (!rdy_in) begin
         // do nothing
@@ -62,14 +64,17 @@ always @(posedge clk) begin
         reg_inst_out <= 0;
         reg_pc_out <= 0;
         reg_inst_rdy <= 0;
+        reg_pred_en <= 0;
     end
     else if (!if_stall && inst_rdy && !lsb_stall && !rs_stall && !rob_stall) begin
         reg_inst_rdy <= 1;
+        reg_pred_en <= 0;
         if (inst_in[1 : 0] == 2'b11) begin
             reg_inst_out <= inst_in;
             reg_pc_out <= reg_next_PC;
             if (inst_in[6 : 4] == `OP_B_TYPE) begin
                 if_stall <= 1;
+                reg_pred_en <= 1;
             end
             else if (inst_in[6 : 4] == `OP_L_TYPE || inst_in[6 : 4] == `OP_S_TYPE) begin
                 lsb_stall <= (lsbFull) ? 1 : 0;
@@ -88,9 +93,11 @@ always @(posedge clk) begin
             if (inst_in[1 : 0] == 2'b01 && (inst_in[15 : 13] == 3'b110 || inst_in[15 : 13] == 3'b111
              || inst_in[15 : 13] == 3'b001 || inst_in[15 : 13] == 3'b101)) begin
                 if_stall <= 1;
+                reg_pred_en <= 1;
             end
             else if (inst_in[1 : 0] == 2'b10 && !inst_in[6 : 2] && inst_in[15 : 13] == 3'b100) begin
                 if_stall <= 1;
+                reg_pred_en <= 1;
             end
             else if (inst_in[1 : 0] == 2'b10 && inst_in[15 : 13] == 3'b010) begin
                 lsb_stall <= lsbFull ? 1 : 0;
@@ -112,6 +119,7 @@ always @(posedge clk) begin
         end
     end
     else begin
+        reg_pred_en <= 0;
         if (reg_inst_rdy) begin
             reg_inst_rdy <= 0;
         end
@@ -126,5 +134,5 @@ assign pc_out = reg_pc_out;
 assign next_PC = reg_next_PC;
 assign inst_out = reg_inst_out;
 assign if2dec = reg_inst_rdy && !rs_stall && !lsb_stall && !rob_stall;
-
+assign if2pred_en = reg_pred_en;
 endmodule

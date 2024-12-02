@@ -37,6 +37,7 @@ module reorderBuffer(
     output wire ready1,
     output wire ready2,
     output wire [`ROB_ID_WIDTH - 1 : 0] newTag, // to rs
+    output wire commit_en,
 
     // from cdb
     input wire rs_cdb_en,
@@ -93,6 +94,7 @@ reg [`OP_WIDTH - 1 : 0] op_head;
 
 reg [`INST_WIDTH - 1 : 0] rob_inst[0 : `ROB_SIZE - 1];
 reg [`INST_WIDTH - 1 : 0] commit_inst;
+reg reg_commit_en;
 
 initial begin
     counter = 0;
@@ -103,14 +105,14 @@ integer i;
 
 always @(posedge clk) begin
     counter <= counter + 1;
-    //    if (`START <= counter && counter <= `END_) begin
-    //        $display("time----> %d, head=%d, tail=%d", counter, head, tail);
-    //     for (i = 0; i < `ROB_SIZE; i++) begin
-    //         if (ready[i]) begin
-    //         $display("%d, label=%d, ready=%d, res=%d, PC=%h", i, label[i], ready[i], res[i], nowPC[i]);
-    //         end
-    //        end
-    //    end
+        if (`START <= counter && counter <= `END_) begin
+            //$display("time----> %d, head=%d, tail=%d", counter, head, tail);
+         for (i = 0; i < `ROB_SIZE; i++) begin
+            //if (ready[i]) begin
+             //$display("%d, label=%d, ready=%d, res=%d, PC=%h", i, label[i], ready[i], res[i], nowPC[i]);
+             //end
+            end
+        end
     if (rst_in || (reg_flush && rdy_in)) begin
         // may let tag be tail...consider later
         tag <= 1;
@@ -154,12 +156,13 @@ always @(posedge clk) begin
 
         // commit
         reg_rob2lsb_store_en <= 0;
+        reg_commit_en <= 0;
         if (ready[(head == `ROB_SIZE - 1) ? 0 : head + 1] && ((head == `ROB_SIZE - 1) ? 0 : head + 1) != tail) begin
             // consider how to exit????
             commit_inst <= rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1];
             if (orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4] == `OP_B_TYPE && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JAL && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JALR) begin
                 head <= head + 1;
-                //$display("commit: %h, counter: %d, res=%d, jump=%h, pred=%d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter, res[(head == `ROB_SIZE - 1) ? 0 : head + 1], jump[(head == `ROB_SIZE - 1) ? 0 : head + 1], pred_result[(head == `ROB_SIZE - 1) ? 0 : head + 1]);
+                $display("commit: %h, counter: %d, res=%d, jump=%h, pred=%d, label=%d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter, res[(head == `ROB_SIZE - 1) ? 0 : head + 1], jump[(head == `ROB_SIZE - 1) ? 0 : head + 1], pred_result[(head == `ROB_SIZE - 1) ? 0 : head + 1], label[(head == `ROB_SIZE - 1) ? 0 : head + 1]);
                 reg_update <= 1;
                 if ((res[(head == `ROB_SIZE - 1) ? 0 : head + 1] == pred_result[(head == `ROB_SIZE - 1) ? 0 : head + 1])) begin
                     reg_pred_res <= 1;
@@ -178,8 +181,9 @@ always @(posedge clk) begin
             else if (orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4] != `OP_S_TYPE) begin
                 reg_update <= 0;
                 head <= head + 1;
-                //$display("commit: %h, counter: %d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter);
+                $display("commit: %h, counter: %d, label=%d, res=%d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter, label[(head == `ROB_SIZE - 1) ? 0 : head + 1], res[label[(head == `ROB_SIZE - 1) ? 0 : head + 1]]);
                 if (dest[(head == `ROB_SIZE - 1) ? 0 : head + 1]) begin
+                    reg_commit_en <= 1;
                     reg_commit_rd <= dest[(head == `ROB_SIZE - 1) ? 0 : head + 1];
                     reg_commit_res <= res[(head == `ROB_SIZE - 1) ? 0 : head + 1];
                     reg_commit_lab <= label[(head == `ROB_SIZE - 1) ? 0 : head + 1];
@@ -188,7 +192,7 @@ always @(posedge clk) begin
             end
             else if (orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4] == `OP_S_TYPE && !mem_busy) begin
                 head <= head + 1;
-                //$display("commit: %h, counter: %d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter);
+                $display("commit: %h, counter: %d, label=%d, res=%d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter, label[(head == `ROB_SIZE - 1) ? 0 : head + 1], res[label[(head == `ROB_SIZE - 1) ? 0 : head + 1]]);
                 reg_rob2lsb_store_en <= 1;
                 reg_store_index <= label[(head == `ROB_SIZE - 1) ? 0 : head + 1];
                 ready[(head == `ROB_SIZE - 1) ? 0 : head + 1] <= 0;
@@ -207,6 +211,7 @@ assign newPC = reg_newPC;
 assign commit_rd = reg_commit_rd;
 assign commit_res = reg_commit_res;
 assign commit_lab = reg_commit_lab;
+assign commit_en = reg_commit_en;
 assign label1 = rf_label1;
 assign label2 = rf_label2;
 assign res1 = rf_label1 ? res[rf_label1] : rf_val1;

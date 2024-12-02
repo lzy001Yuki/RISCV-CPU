@@ -57,5 +57,4 @@ assign rs_cdb2val_out = reg_rs_val;
 assign lsb_cdb2lab_out = reg_lsb_lab;
 assign lsb_cdb2val_out = reg_lsb_val;
 
-
 endmodule

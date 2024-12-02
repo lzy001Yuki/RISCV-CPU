@@ -89,6 +89,9 @@ end
 
 always @(posedge clk) begin
     counter <= counter + 1;
+    if (lsb2mem_en && lsb2mem_store_en && lsb2mem_addr == 32'h30000) begin
+        //$display("counter=%d, addr=%h, value=%d", counter, lsb2mem_addr, lsb2mem_val);  
+    end    
     if (rst_in || flush) begin
         ready <= 0;
         current_addr <= 0;
@@ -220,6 +223,10 @@ always @(posedge clk) begin
         endcase
         end
     end
+    else if (cache_finish || ready) begin
+            cache_finish <= 0;
+            ready <= 0;
+    end
 
     // to do : continue instruction fetch when no operation in process
     // else if (mem_work_type == 2'b00)
@@ -229,7 +236,7 @@ assign is_c_inst = cache_finish ? mem2if_inst_out[1 : 0] == 2'b11 ? 0 : 1 : 0;
 assign mem_busy = lsb2mem_en || reg_lsb2mem_en;
 assign mem2lsb_load_en = ready && !store_or_load;
 assign mem2lsb_load_id = reg_lsb2mem_load_id;
-assign mem2lsb_load_val = mem2lsb_load_en ? load_result(lsb2mem_type, current_res, mem_din) : 0;
+assign mem2lsb_load_val = mem2lsb_load_en ? load_result(reg_lsb2mem_type, current_res, mem_din) : 0;
 assign mem2cache_upd = cache_finish;
 assign mem_rdy = cache_finish;
 assign mem2if_inst_out = (cache_finish) ? load_result(3'b010, current_res, mem_din) : 0;

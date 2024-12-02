@@ -178,6 +178,7 @@ reorderBuffer rob(
   .commit_rd(rob2rf_commit_rd),
   .commit_res(rob2rf_commit_res),
   .commit_lab(rob2rf_commit_lab),
+  .commit_en(commit_en),
 
   .rsFull(rsFull),
 
@@ -195,6 +196,7 @@ reorderBuffer rob(
   .rs_cdb2val(cdb2rs_val),
   .lsb_cdb2lab(cdb2lsb_lab),
   .lsb_cdb2val(cdb2lsb_val),
+
 
   .robFull(robFull),
 
@@ -217,6 +219,7 @@ wire [`VAL_WIDTH - 1 : 0] rf2rob_val1;
 wire [`VAL_WIDTH - 1 : 0] rf2rob_val2;
 wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab1;
 wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab2;
+wire commit_en;
 
 register regFile(
   .clk(clk_in),
@@ -231,6 +234,7 @@ register regFile(
   .rob2rf_commit_rd(rob2rf_commit_rd),
   .rob2rf_commit_res(rob2rf_commit_res),
   .rob2rf_commit_lab(rob2rf_commit_lab),
+  .commit_en(commit_en),
   .rf2rob_val1(rf2rob_val1),
   .rf2rob_val2(rf2rob_val2),
   .rf2rob_lab1(rf2rob_lab1),
@@ -267,6 +271,9 @@ reservationStation rs(
   .ready1(rob_ready1),
   .ready2(rob_ready2),
   .newTag(rob_newTag),
+  .commit_en(commit_en),
+  .commit_lab(rob2rf_commit_lab),
+  .commit_val(rob2rf_commit_res),
 
   .rs_cdb_en(rs_cdb_en),
   .lsb_cdb_en(lsb_cdb_en),
@@ -316,6 +323,9 @@ loadStoreBuffer lsb(
   .newTag(rob_newTag),
   .rob2lsb_store_en(rob2lsb_store_en),
   .store_index(store_index),
+  .commit_en(commit_en),
+  .commit_lab(rob2rf_commit_lab),
+  .commit_val(rob2rf_commit_res),
 
   .rs_cdb_en(rs_cdb_en),
   .cdb2lsb_en(lsb_cdb_en),

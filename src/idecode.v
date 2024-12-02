@@ -63,6 +63,9 @@ always @(posedge clk) begin
         reg_dec_imm <= 0;
         reg_dec2if_pc <= 0;
         reg_dec2rob_en <= 0;
+        reg_dec2rs_en <= 0;
+        pred_res <= 0;
+        reg_dec2lsb_en <= 0;
     end
     else if (!rdy_in) begin
         // do nothing
@@ -96,7 +99,7 @@ always @(posedge clk) begin
             reg_dec_rd <= inst_in[11 : 7];
             reg_dec2if_pc <= pc_in + {{12{inst_in[31]}}, inst_in[19:12], inst_in[20], inst_in[30:21], 1'b0};
             reg_dec2rs_en <= 1;
-        end
+        end 
         else if (inst_in[`OP_WIDTH - 1 : 0] == `OP_JALR) begin
             reg_dec_imm <= {{21{inst_in[31]}}, inst_in[30:20]} & 32'b11111111111111111111111111111110;
             reg_orderType <= `OP_JALR;
@@ -223,7 +226,7 @@ always @(posedge clk) begin
                         3'b000: begin // c.addi
                             reg_dec_rd <= inst_in[11 : 7];
                             reg_dec_rs1 <= inst_in[11 : 7];
-                            reg_dec_imm <= {{27{inst_in[12]}}, inst_in[4 : 0]};
+                            reg_dec_imm <= {{27{inst_in[12]}}, inst_in[6 : 2]};
                             reg_orderType <= 7'b0010000;
                         end
                         3'b001: begin // c.jal
@@ -291,31 +294,31 @@ always @(posedge clk) begin
                             reg_orderType <= `OP_JAL;
                             reg_dec_rd <= 5'b00000;
                             reg_dec_imm <= 2;
-                            reg_dec2if_pc <= pc_in + {{21{inst_in[12]}}, inst_in[8], inst_in[10 : 9], inst_in[6], inst_in[7], inst_in[2], inst_in[11], inst_in[5 : 3]};
+                            reg_dec2if_pc <= pc_in + {{21{inst_in[12]}}, inst_in[8], inst_in[10 : 9], inst_in[6], inst_in[7], inst_in[2], inst_in[11], inst_in[5 : 3], 1'b0};
                         end
                         3'b110: begin // c.beqz
                             reg_orderType <= 7'b1100000;
                             reg_dec_rs1 <= {2'b0, inst_in[9 : 7]} + 8;
-                            reg_dec_rs1 <= 5'b00000;
-                            reg_dec_imm <= {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3]};
-                            reg_jump_addr <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3]};
+                            reg_dec_rs2 <= 5'b00000;
+                            reg_dec_imm <= {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3], 1'b0};
+                            reg_jump_addr <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3], 1'b0};
                             pred_res <= pred;
                             if (pred) begin
-                                reg_dec2if_pc <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3]};
+                                reg_dec2if_pc <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3], 1'b0};
                             end
                             else begin
                                 reg_dec2if_pc <= pc_in + 2;
                             end
                         end
                         3'b111: begin // c.bnez
-                            reg_orderType <= 7'b1101000;
+                            reg_orderType <= 7'b1100010;
                             reg_dec_rs1 <= {2'b0, inst_in[9 : 7]} + 8;
-                            reg_dec_rs1 <= 5'b00000;
-                            reg_dec_imm <= {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3]};
-                            reg_jump_addr <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3]};
+                            reg_dec_rs2 <= 5'b00000;
+                            reg_dec_imm <= {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3], 1'b0};
+                            reg_jump_addr <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3], 1'b0};
                             pred_res <= pred;
                             if (pred) begin
-                                reg_dec2if_pc <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3]};
+                                reg_dec2if_pc <= pc_in + {{24{inst_in[12]}}, inst_in[6 : 5], inst_in[2], inst_in[11 : 10], inst_in[4 : 3], 1'b0};
                             end
                             else begin
                                 reg_dec2if_pc <= pc_in + 2;

@@ -31,6 +31,9 @@ module reservationStation(
     input wire ready1,
     input wire ready2,
     input wire [`ROB_ID_WIDTH - 1: 0] newTag,
+    input wire commit_en,
+    input wire [`ROB_ID_WIDTH - 1 : 0] commit_lab,
+    input wire [`VAL_WIDTH - 1 : 0] commit_val,
 
     // connect to cdb
     input wire rs_cdb_en,
@@ -67,13 +70,13 @@ integer issue_flag;
 integer exe_flag;
 // find issue_id
 always @(negedge clk) begin
-    if (lsb_cdb_en || rs_cdb_en) begin
+    if (lsb_cdb_en || rs_cdb_en || commit_en) begin
         for (i = 0; i < `RS_SIZE; i++) begin
             if (busy[i]) begin
-                V1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V1[i];
-                Q1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q1[i];
-                V2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V2[i];
-                Q2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q2[i];
+                V1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q1[i] == commit_lab && commit_en) ? commit_val : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V1[i];
+                Q1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q1[i] == commit_lab && commit_en) ? 0 : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q1[i];
+                V2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q2[i] == commit_lab && commit_en) ? commit_val : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V2[i];
+                Q2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q2[i] == commit_lab && commit_en) ? 0 : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q2[i];
             end
         end
     end
@@ -105,14 +108,14 @@ reg [`VAL_WIDTH - 1 : 0] debug_V1_0;
 
 always @(posedge clk) begin
     counter <= counter + 1;
-    //  if (counter >= `START && counter <= `END_ ) begin
-    //       $display("reservatin_station------------- time-----", counter);
-    //       for (i = 0; i < `RS_SIZE; i++) begin
-    //         if (busy[i]) begin
-    //           $display("busy=%d, entry=%d, Q1=%d, Q2=%d, V1=%d, V2=%d", busy[i], entry[i], Q1[i], Q2[i], V1[i], V2[i]);
-    //         end
-    //       end
-    //  end
+      if (counter >= `START && counter <= `END_ ) begin
+           //$display("reservatin_station------------- time-----", counter);
+           for (i = 0; i < `RS_SIZE; i++) begin
+             if (busy[i]) begin
+               //$display("busy=%d, entry=%d, Q1=%d, Q2=%d, V1=%d, V2=%d", busy[i], entry[i], Q1[i], Q2[i], V1[i], V2[i]);
+             end
+           end
+      end
     if (rst_in || (flush && rdy_in)) begin
         for (i = 0; i < `RS_SIZE; i = i + 1) begin
             busy[i] <= 0;
@@ -223,6 +226,7 @@ alu alu(
     .rdy_in(rdy_in),
 
     .execute(reg_execute),
+    .flush(flush),
     .type(alu_type),
     .val1(alu_val1),
     .val2(alu_val2),

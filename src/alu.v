@@ -5,6 +5,7 @@ module alu(
     input wire rdy_in,
 
     input wire execute,
+    input wire flush,
     input wire [`OP_WIDTH - 1 : 0] type,
     input wire [`VAL_WIDTH - 1 : 0] val1, 
     input wire [`VAL_WIDTH - 1 : 0] val2,
@@ -28,7 +29,7 @@ reg [`ADDR_WIDTH - 1 : 0] PC;
 reg cont;
 
 always @(posedge clk) begin
-    if (rst_in) begin
+    if (rst_in || flush) begin
         ready <= 0;
         val_out_reg <= 0;
         reg_entry <= 0;
