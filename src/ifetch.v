@@ -8,7 +8,7 @@ module ifetch(
     // from controller
     input wire inst_rdy,
     input wire [`INST_WIDTH - 1 : 0] inst_in,
-    
+    input wire dec2if_next_inst,
     input wire[`ADDR_WIDTH - 1 : 0] alu2if, // get next PC from alu
     input wire[`ADDR_WIDTH - 1 : 0] rob2if, // get next PC from rob
     input wire[`ADDR_WIDTH - 1 : 0] dec2if, // get next PC from decoder
@@ -18,6 +18,7 @@ module ifetch(
     input wire lsbFull,
     input wire robFull,
     input wire rsFull,
+
 
     output wire if2dec, // enable decode operation
     output wire[`INST_WIDTH - 1 : 0] inst_out,
@@ -66,7 +67,7 @@ always @(posedge clk) begin
         reg_inst_rdy <= 0;
         reg_pred_en <= 0;
     end
-    else if (!if_stall && inst_rdy && !lsb_stall && !rs_stall && !rob_stall) begin
+    else if (!if_stall && inst_rdy && !lsb_stall && !rs_stall && !rob_stall && dec2if_next_inst) begin
         reg_inst_rdy <= 1;
         reg_pred_en <= 0;
         if (inst_in[1 : 0] == 2'b11) begin
@@ -133,6 +134,6 @@ assign next_inst = !if_stall; // to cache
 assign pc_out = reg_pc_out;
 assign next_PC = reg_next_PC;
 assign inst_out = reg_inst_out;
-assign if2dec = reg_inst_rdy && !rs_stall && !lsb_stall && !rob_stall;
+assign if2dec = reg_inst_rdy && !rs_stall && !lsb_stall && !rob_stall && dec2if_next_inst;
 assign if2pred_en = reg_pred_en;
 endmodule

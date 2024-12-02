@@ -3,6 +3,11 @@ module idecode(
     input wire clk,
     input wire rst_in,
     input wire rdy_in,
+
+    input wire robFull,
+    input wire lsbFull,
+    input wire rsFull,
+
     // from ifetch
     input wire if2dec,
     input wire flush,
@@ -25,6 +30,7 @@ module idecode(
     output wire [`ADDR_WIDTH - 1 : 0] dec_inst_curPC,
     output wire [`ADDR_WIDTH - 1 : 0] dec2rob_jump_addr,
     output wire dec2rob_pred,
+    output wire dec2if_next_inst,
     // to lsb
     output wire dec2lsb_en,
     // to rs
@@ -38,12 +44,11 @@ reg [`REG_WIDTH - 1 : 0] reg_dec_rs2;
 reg [`VAL_WIDTH - 1 : 0] reg_dec_imm;
 reg [`ADDR_WIDTH - 1 : 0] reg_dec2if_pc;
 reg [`ADDR_WIDTH - 1 : 0] reg_curPC;
-reg reg_dec2rob_en;
+reg issue_en;
 reg [`INST_WIDTH - 1 : 0] reg_curInst;
 reg reg_dec2lsb_en;
 reg reg_dec2rs_en;
 reg [`ADDR_WIDTH - 1 : 0] reg_jump_addr;
-
 reg [`INST_WIDTH - 1 : 0] reg_dec_inst;
 reg pred_res;
 
@@ -62,17 +67,17 @@ always @(posedge clk) begin
         reg_dec_rd <= 0;
         reg_dec_imm <= 0;
         reg_dec2if_pc <= 0;
-        reg_dec2rob_en <= 0;
-        reg_dec2rs_en <= 0;
+        issue_en <= 0;
+        reg_dec2rs_en <= 1;
         pred_res <= 0;
-        reg_dec2lsb_en <= 0;
+        reg_dec2lsb_en <= 1;
     end
     else if (!rdy_in) begin
         // do nothing
     end
     else if (if2dec && rdy_in) begin
         reg_dec_inst <= inst_in;
-        reg_dec2rob_en <= 1;
+        issue_en <= 1;
         reg_dec_rd <= 0;
         reg_dec_rs1 <= 0;
         reg_dec_rs2 <= 0;
@@ -416,9 +421,9 @@ always @(posedge clk) begin
         end
     end
     else begin
-        reg_dec2lsb_en <= 0;
-        reg_dec2rs_en <= 0;
-        reg_dec2rob_en <= 0;
+        // reg_dec2lsb_en <= 0;
+        // reg_dec2rs_en <= 0;
+        issue_en <= 0;
     end
 end
 
@@ -430,9 +435,10 @@ assign dec_imm = reg_dec_imm;
 assign decUpd = reg_dec2if_pc ? 1 : 0;
 assign dec2if_pc = reg_dec2if_pc;
 assign dec2rob_jump_addr = reg_jump_addr;
-assign dec2rob_en = reg_dec2rob_en;
-assign dec2lsb_en = reg_dec2lsb_en;
-assign dec2rs_en = reg_dec2rs_en;
+assign dec2rob_en = dec2if_next_inst && issue_en;
+assign dec2lsb_en = lsbFull ? 0 : (reg_dec2lsb_en && !robFull && issue_en);
+assign dec2rs_en = rsFull ? 0 : (reg_dec2rs_en && !robFull && issue_en);
+assign dec2if_next_inst = (robFull ? 0 : reg_dec2lsb_en ? lsbFull ? 0 : 1 : reg_dec2rs_en ? rsFull ? 0 : 1 : 0);
 assign dec_inst_curPC = reg_curPC;
 assign dec_inst = reg_dec_inst;
 assign dec2rob_pred = pred_res;

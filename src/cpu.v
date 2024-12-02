@@ -22,6 +22,7 @@ wire ctrl2if_inst_rdy;
 wire [`INST_WIDTH - 1 : 0] ctrl2if_inst_out;
 wire if2ctrl_en;
 wire [`ADDR_WIDTH - 1 : 0] if2ctrl_next_PC;
+wire dec2if_next_inst;
 
 controller ctrl(
   .clk(clk_in),
@@ -70,6 +71,7 @@ ifetch ins_fetch(
   .lsbFull(lsbFull),
   .robFull(robFull),
   .rsFull(rsFull),
+  .dec2if_next_inst(dec2if_next_inst),
 
   .if2dec(if2dec_en),
   .inst_out(if_inst_out),
@@ -114,8 +116,12 @@ idecode ins_dec(
   .dec2if_pc(dec2if_pc),
   .dec_inst(dec_inst),
   .dec2rob_pred(dec2rob_pred),
+  .rsFull(rsFull),
+  .robFull(robFull),
+  .lsbFull(lsbFull),
 
   .dec2rob_en(dec2rob_en),
+  .dec2if_next_inst(dec2if_next_inst),
   .dec_inst_curPC(dec_instPC_out),
   .dec2rob_jump_addr(dec2rob_jump_addr),
   .dec2lsb_en(dec2lsb_en),
@@ -140,13 +146,13 @@ predictor pred(
 );
 
 wire robFull;
-wire [`ROB_ID_WIDTH - 1: 0] rob_label1;
-wire [`ROB_ID_WIDTH - 1: 0] rob_label2;
+wire [`ROB_ID_WIDTH: 0] rob_label1;
+wire [`ROB_ID_WIDTH: 0] rob_label2;
 wire [`VAL_WIDTH - 1 : 0] rob_res1;
 wire [`VAL_WIDTH - 1 : 0] rob_res2;
 wire rob_ready1;
 wire rob_ready2;
-wire [`ROB_ID_WIDTH - 1: 0] rob_newTag;
+wire [`ROB_ID_WIDTH: 0] rob_newTag;
 wire [`ADDR_WIDTH - 1 : 0] dec_instPC_out;
 wire [`ADDR_WIDTH - 1 : 0] rob2if_newPC;
 wire rob2pred_en;
@@ -214,11 +220,11 @@ reorderBuffer rob(
 
 wire [`REG_WIDTH - 1 : 0] rob2rf_commit_rd;
 wire [`VAL_WIDTH - 1 : 0] rob2rf_commit_res;
-wire [`ROB_ID_WIDTH - 1: 0] rob2rf_commit_lab;
+wire [`ROB_ID_WIDTH: 0] rob2rf_commit_lab;
 wire [`VAL_WIDTH - 1 : 0] rf2rob_val1;
 wire [`VAL_WIDTH - 1 : 0] rf2rob_val2;
-wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab1;
-wire [`ROB_ID_WIDTH - 1: 0] rf2rob_lab2;
+wire [`ROB_ID_WIDTH: 0] rf2rob_lab1;
+wire [`ROB_ID_WIDTH: 0] rf2rob_lab2;
 wire commit_en;
 
 register regFile(
@@ -301,7 +307,7 @@ wire lsb2mem_store_en;
 wire lsb2mem_load_en;
 wire [`LSB_ID_WIDTH - 1 : 0] lsb2mem_load_id;
 wire rob2lsb_store_en;
-wire [`ROB_ID_WIDTH - 1: 0] store_index;
+wire [`ROB_ID_WIDTH: 0] store_index;
 
 loadStoreBuffer lsb(
   .clk(clk_in),
@@ -355,13 +361,13 @@ wire rs_cdb_en;
 wire lsb_cdb_en;
 wire rs2cdb_en;
 wire lsb2cdb_en;
-wire [`ROB_ID_WIDTH - 1: 0] rs2cdb_lab;
+wire [`ROB_ID_WIDTH: 0] rs2cdb_lab;
 wire [`VAL_WIDTH - 1 : 0] rs2cdb_val;
-wire [`ROB_ID_WIDTH - 1: 0] lsb2cdb_lab;
+wire [`ROB_ID_WIDTH: 0] lsb2cdb_lab;
 wire [`VAL_WIDTH - 1 : 0] lsb2cdb_val;
-wire [`ROB_ID_WIDTH - 1: 0] cdb2rs_lab;
+wire [`ROB_ID_WIDTH: 0] cdb2rs_lab;
 wire [`VAL_WIDTH - 1 : 0] cdb2rs_val;
-wire [`ROB_ID_WIDTH - 1: 0] cdb2lsb_lab;
+wire [`ROB_ID_WIDTH: 0] cdb2lsb_lab;
 wire [`VAL_WIDTH - 1 : 0] cdb2lsb_val;
 
 cdb cdbus(

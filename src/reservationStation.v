@@ -24,37 +24,37 @@ module reservationStation(
     input wire dec2rs_en,
     output wire isFull,
     // connect to rob
-    input wire [`ROB_ID_WIDTH - 1: 0] label1,
-    input wire [`ROB_ID_WIDTH - 1: 0] label2,
+    input wire [`ROB_ID_WIDTH: 0] label1,
+    input wire [`ROB_ID_WIDTH: 0] label2,
     input wire [`VAL_WIDTH - 1 : 0] res1, //from rob or regFile
     input wire [`VAL_WIDTH - 1 : 0] res2,
     input wire ready1,
     input wire ready2,
-    input wire [`ROB_ID_WIDTH - 1: 0] newTag,
+    input wire [`ROB_ID_WIDTH: 0] newTag,
     input wire commit_en,
-    input wire [`ROB_ID_WIDTH - 1 : 0] commit_lab,
+    input wire [`ROB_ID_WIDTH : 0] commit_lab,
     input wire [`VAL_WIDTH - 1 : 0] commit_val,
 
     // connect to cdb
     input wire rs_cdb_en,
     input wire lsb_cdb_en,
-    input wire [`ROB_ID_WIDTH - 1: 0] rs_cdb2lab,
+    input wire [`ROB_ID_WIDTH: 0] rs_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
-    input wire [`ROB_ID_WIDTH - 1: 0] lsb_cdb2lab,
+    input wire [`ROB_ID_WIDTH: 0] lsb_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
 
     // connect to alu
     output wire aluReady,
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
-    output wire[`ROB_ID_WIDTH - 1: 0] lab2cdb
+    output wire[`ROB_ID_WIDTH : 0] lab2cdb
 );
 // reg inside the module can remain until changed, thus useful!!
 reg busy [0 : `RS_SIZE - 1];
-reg [`ROB_ID_WIDTH - 1: 0] entry [0 : `RS_SIZE - 1]; // index in rob
+reg [`ROB_ID_WIDTH: 0] entry [0 : `RS_SIZE - 1]; // index in rob
 reg [`VAL_WIDTH - 1 : 0] V1 [0 : `RS_SIZE - 1];
 reg [`VAL_WIDTH - 1 : 0] V2 [0 : `RS_SIZE - 1];
-reg [`ROB_ID_WIDTH - 1: 0] Q1 [0 : `RS_SIZE - 1];
-reg [`ROB_ID_WIDTH - 1: 0] Q2 [0 : `RS_SIZE - 1];
+reg [`ROB_ID_WIDTH: 0] Q1 [0 : `RS_SIZE - 1];
+reg [`ROB_ID_WIDTH: 0] Q2 [0 : `RS_SIZE - 1];
 reg [`OP_WIDTH - 1 : 0] orderType [0 : `RS_SIZE - 1];
 reg [`RS_ID_WIDTH - 1: 0] issue_id;
 reg [`RS_ID_WIDTH - 1: 0] exe_id;
@@ -108,12 +108,12 @@ reg [`VAL_WIDTH - 1 : 0] debug_V1_0;
 
 always @(posedge clk) begin
     counter <= counter + 1;
-      if (counter >= `START && counter <= `END_ ) begin
-           //$display("reservatin_station------------- time-----", counter);
+      if (counter >= `START && counter <= `END_ && `DEBUG) begin
+           $display("reservatin_station------------- time-----", counter);
            for (i = 0; i < `RS_SIZE; i++) begin
-             if (busy[i]) begin
-               //$display("busy=%d, entry=%d, Q1=%d, Q2=%d, V1=%d, V2=%d", busy[i], entry[i], Q1[i], Q2[i], V1[i], V2[i]);
-             end
+             //if (busy[i]) begin
+            $display("busy=%d, entry=%d, Q1=%d, Q2=%d, V1=%d, V2=%d", busy[i], entry[i], Q1[i], Q2[i], V1[i], V2[i]);
+             //end
            end
       end
     if (rst_in || (flush && rdy_in)) begin
@@ -209,8 +209,8 @@ assign alu_val1 = reg_alu_val1;
 wire [`VAL_WIDTH - 1 : 0] alu_val2;
 reg [`VAL_WIDTH - 1 : 0] reg_alu_val2;
 assign alu_val2 = reg_alu_val2;
-wire [`ROB_ID_WIDTH - 1: 0] alu_entry;
-reg [`ROB_ID_WIDTH - 1: 0] reg_alu_entry;
+wire [`ROB_ID_WIDTH: 0] alu_entry;
+reg [`ROB_ID_WIDTH: 0] reg_alu_entry;
 assign alu_entry = reg_alu_entry;
 
 initial begin

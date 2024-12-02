@@ -17,34 +17,34 @@ module reorderBuffer(
     input wire dec2rob_pred,
 
     // from rf
-    input wire [`ROB_ID_WIDTH - 1: 0] rf_label1,
-    input wire [`ROB_ID_WIDTH - 1: 0] rf_label2,
+    input wire [`ROB_ID_WIDTH : 0] rf_label1,
+    input wire [`ROB_ID_WIDTH : 0] rf_label2,
     input wire [`VAL_WIDTH - 1 : 0] rf_val1,
     input wire [`VAL_WIDTH - 1 : 0] rf_val2,
 
     // to rf
     output wire [`REG_WIDTH - 1 : 0] commit_rd,
     output wire [`VAL_WIDTH - 1 : 0] commit_res,
-    output wire [`ROB_ID_WIDTH - 1: 0] commit_lab,
+    output wire [`ROB_ID_WIDTH: 0] commit_lab,
 
     // from rs
     input wire rsFull,
     // to rs
-    output wire [`ROB_ID_WIDTH - 1: 0] label1,
-    output wire [`ROB_ID_WIDTH - 1 : 0] label2,
+    output wire [`ROB_ID_WIDTH: 0] label1,
+    output wire [`ROB_ID_WIDTH : 0] label2,
     output wire [`VAL_WIDTH - 1 : 0] res1, //from rob or regFile
     output wire [`VAL_WIDTH - 1 : 0] res2,
     output wire ready1,
     output wire ready2,
-    output wire [`ROB_ID_WIDTH - 1 : 0] newTag, // to rs
+    output wire [`ROB_ID_WIDTH : 0] newTag, // to rs
     output wire commit_en,
 
     // from cdb
     input wire rs_cdb_en,
     input wire lsb_cdb_en,
-    input wire [`ROB_ID_WIDTH - 1: 0] rs_cdb2lab,
+    input wire [`ROB_ID_WIDTH: 0] rs_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
-    input wire [`ROB_ID_WIDTH - 1: 0] lsb_cdb2lab,
+    input wire [`ROB_ID_WIDTH: 0] lsb_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
 
     output wire robFull,
@@ -62,19 +62,19 @@ module reorderBuffer(
     // from lsb
     input wire lsbFull,
     output wire rob2lsb_store_en,
-    output wire [`ROB_ID_WIDTH - 1: 0] store_index
+    output wire [`ROB_ID_WIDTH: 0] store_index
 );
 
 // consider simplify register use????
 
-reg [`ROB_ID_WIDTH - 1 : 0] tag;
+reg [`ROB_ID_WIDTH: 0] tag;
 reg [`ROB_ID_WIDTH - 1 : 0] head;
 reg [`ROB_ID_WIDTH - 1 : 0] tail;
 reg ready [0 : `ROB_SIZE - 1];
 reg [`VAL_WIDTH - 1 : 0] res [0 : `ROB_SIZE - 1]; // res_val 
 reg [`ADDR_WIDTH - 1 : 0] nowPC [0 : `ROB_SIZE - 1];
 reg [`REG_WIDTH - 1 : 0] dest [0 : `ROB_SIZE - 1]; //rd
-reg [`ROB_ID_WIDTH - 1 : 0] label [0 : `ROB_SIZE - 1];
+reg [`ROB_ID_WIDTH : 0] label [0 : `ROB_SIZE - 1];
 reg [`ADDR_WIDTH - 1 : 0] jump [0 : `ROB_SIZE - 1]; // jump_address if jump
 reg [`OP_WIDTH - 1 : 0] orderType [0 : `ROB_SIZE - 1];
 reg pred_result[0 : `ROB_SIZE - 1];
@@ -85,9 +85,9 @@ reg [`ADDR_WIDTH - 1 : 0] reg_newPC;
 reg reg_update;
 reg [`REG_WIDTH - 1 : 0] reg_commit_rd;
 reg [`VAL_WIDTH - 1 : 0] reg_commit_res;
-reg [`ROB_ID_WIDTH - 1: 0] reg_commit_lab;
+reg [`ROB_ID_WIDTH: 0] reg_commit_lab;
 reg reg_rob2lsb_store_en;
-reg [`ROB_ID_WIDTH - 1 : 0] reg_store_index;
+reg [`ROB_ID_WIDTH : 0] reg_store_index;
 reg [31 : 0] counter;
 reg ready_head;
 reg [`OP_WIDTH - 1 : 0] op_head;
@@ -105,11 +105,11 @@ integer i;
 
 always @(posedge clk) begin
     counter <= counter + 1;
-        if (`START <= counter && counter <= `END_) begin
-            //$display("time----> %d, head=%d, tail=%d", counter, head, tail);
+        if (`START <= counter && counter <= `END_ && `DEBUG) begin
+            $display("time----> %d, head=%d, tail=%d", counter, head, tail);
          for (i = 0; i < `ROB_SIZE; i++) begin
             //if (ready[i]) begin
-             //$display("%d, label=%d, ready=%d, res=%d, PC=%h", i, label[i], ready[i], res[i], nowPC[i]);
+             $display("%d, label=%d, ready=%d, res=%d, PC=%h", i, label[i], ready[i], res[i], nowPC[i]);
              //end
             end
         end
@@ -146,12 +146,12 @@ always @(posedge clk) begin
         end
         // fetchData
         if (rs_cdb_en) begin
-            ready[rs_cdb2lab] <= 1;
-            res[rs_cdb2lab] <= rs_cdb2val;
+            ready[rs_cdb2lab == `ROB_SIZE ? 0 : rs_cdb2lab] <= 1;
+            res[rs_cdb2lab == `ROB_SIZE ? 0 : rs_cdb2lab] <= rs_cdb2val;
         end
         if (lsb_cdb_en) begin
-            ready[lsb_cdb2lab] <= 1;
-            res[lsb_cdb2lab] <= lsb_cdb2val;
+            ready[lsb_cdb2lab == `ROB_SIZE ? 0 : lsb_cdb2lab] <= 1;
+            res[lsb_cdb2lab == `ROB_SIZE ? 0 : lsb_cdb2lab] <= lsb_cdb2val;
         end
 
         // commit
@@ -162,7 +162,9 @@ always @(posedge clk) begin
             commit_inst <= rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1];
             if (orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4] == `OP_B_TYPE && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JAL && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JALR) begin
                 head <= head + 1;
+                if (`DEBUG) begin
                 $display("commit: %h, counter: %d, res=%d, jump=%h, pred=%d, label=%d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter, res[(head == `ROB_SIZE - 1) ? 0 : head + 1], jump[(head == `ROB_SIZE - 1) ? 0 : head + 1], pred_result[(head == `ROB_SIZE - 1) ? 0 : head + 1], label[(head == `ROB_SIZE - 1) ? 0 : head + 1]);
+                end
                 reg_update <= 1;
                 if ((res[(head == `ROB_SIZE - 1) ? 0 : head + 1] == pred_result[(head == `ROB_SIZE - 1) ? 0 : head + 1])) begin
                     reg_pred_res <= 1;
@@ -171,7 +173,7 @@ always @(posedge clk) begin
                 end
                 else begin
                     // false prediction
-                    reg_newPC <= res[(head == `ROB_SIZE - 1) ? 0 : head + 1] ? jump[(head == `ROB_SIZE - 1) ? 0 : head + 1] : nowPC[(head == `ROB_SIZE - 1) ? 0 : head + 1] + 4;
+                    reg_newPC <= res[(head == `ROB_SIZE - 1) ? 0 : head + 1] ? jump[(head == `ROB_SIZE - 1) ? 0 : head + 1] : nowPC[(head == `ROB_SIZE - 1) ? 0 : head + 1] + (rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1][1 : 0] == 2'b11 ? 4 : 2);
                     reg_pred_res <= 0;
                     reg_rob2pre_curPC <= nowPC[(head == `ROB_SIZE - 1) ? 0 : head + 1];
                     reg_flush <= 1;
@@ -181,7 +183,9 @@ always @(posedge clk) begin
             else if (orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4] != `OP_S_TYPE) begin
                 reg_update <= 0;
                 head <= head + 1;
+                if (`DEBUG) begin
                 $display("commit: %h, counter: %d, label=%d, res=%d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter, label[(head == `ROB_SIZE - 1) ? 0 : head + 1], res[label[(head == `ROB_SIZE - 1) ? 0 : head + 1]]);
+                end
                 if (dest[(head == `ROB_SIZE - 1) ? 0 : head + 1]) begin
                     reg_commit_en <= 1;
                     reg_commit_rd <= dest[(head == `ROB_SIZE - 1) ? 0 : head + 1];
@@ -192,7 +196,9 @@ always @(posedge clk) begin
             end
             else if (orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4] == `OP_S_TYPE && !mem_busy) begin
                 head <= head + 1;
+                if (`DEBUG) begin
                 $display("commit: %h, counter: %d, label=%d, res=%d", rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1], counter, label[(head == `ROB_SIZE - 1) ? 0 : head + 1], res[label[(head == `ROB_SIZE - 1) ? 0 : head + 1]]);
+                end
                 reg_rob2lsb_store_en <= 1;
                 reg_store_index <= label[(head == `ROB_SIZE - 1) ? 0 : head + 1];
                 ready[(head == `ROB_SIZE - 1) ? 0 : head + 1] <= 0;
@@ -214,10 +220,10 @@ assign commit_lab = reg_commit_lab;
 assign commit_en = reg_commit_en;
 assign label1 = rf_label1;
 assign label2 = rf_label2;
-assign res1 = rf_label1 ? res[rf_label1] : rf_val1;
-assign res2 = rf_label2 ? res[rf_label2] : rf_val2;
-assign ready1 = rf_label1 ? ready[rf_label1] : 1;
-assign ready2 = rf_label2 ? ready[rf_label2] : 1;
+assign res1 = rf_label1 ? res[rf_label1 == `ROB_SIZE ? 0 : rf_label1] : rf_val1;
+assign res2 = rf_label2 ? res[rf_label2 == `ROB_SIZE ? 0 : rf_label2] : rf_val2;
+assign ready1 = rf_label1 ? ready[rf_label1 == `ROB_SIZE ? 0 : rf_label1] : 1;
+assign ready2 = rf_label2 ? ready[rf_label2 == `ROB_SIZE ? 0 : rf_label2] : 1;
 assign rob2lsb_store_en = reg_rob2lsb_store_en;
 assign store_index = reg_store_index;
 endmodule

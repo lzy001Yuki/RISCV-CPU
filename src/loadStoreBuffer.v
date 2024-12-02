@@ -18,29 +18,29 @@ module loadStoreBuffer#(
     output wire isFull,
 
     // from rob
-    input wire [`ROB_ID_WIDTH - 1 : 0] newTag,
-    input wire [`ROB_ID_WIDTH - 1: 0] label1,
-    input wire [`ROB_ID_WIDTH - 1: 0] label2,
+    input wire [`ROB_ID_WIDTH : 0] newTag,
+    input wire [`ROB_ID_WIDTH: 0] label1,
+    input wire [`ROB_ID_WIDTH: 0] label2,
     input wire [`VAL_WIDTH - 1 : 0] res1, //from rob (val from rob / rf)
     input wire [`VAL_WIDTH - 1 : 0] res2,
     input wire ready1,
     input wire ready2,
     input wire rob2lsb_store_en,
-    input wire [`ROB_ID_WIDTH - 1: 0] store_index,
+    input wire [`ROB_ID_WIDTH: 0] store_index,
     input wire commit_en,
-    input wire [`ROB_ID_WIDTH - 1 : 0] commit_lab,
+    input wire [`ROB_ID_WIDTH : 0] commit_lab,
     input wire [`VAL_WIDTH - 1 : 0] commit_val,
 
     // from cdb
     input wire rs_cdb_en,
     input wire cdb2lsb_en,
-    input wire [`ROB_ID_WIDTH - 1: 0] rs_cdb2lab,
+    input wire [`ROB_ID_WIDTH: 0] rs_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] rs_cdb2val,
-    input wire [`ROB_ID_WIDTH - 1: 0] lsb_cdb2lab,
+    input wire [`ROB_ID_WIDTH: 0] lsb_cdb2lab,
     input wire [`VAL_WIDTH - 1 : 0] lsb_cdb2val,
     // to cdb
     output wire[`VAL_WIDTH - 1 : 0] val2cdb,
-    output wire[`ROB_ID_WIDTH - 1: 0] lab2cdb,
+    output wire[`ROB_ID_WIDTH: 0] lab2cdb,
     output wire lsb_cdb_en,
 
     // from memory
@@ -68,11 +68,11 @@ reg [`LSB_ID_WIDTH - 1 : 0] tail;
 reg nodeType [`LSB_SIZE - 1 : 0]; // 0 for load, 1 for store12
 reg [`OP_WIDTH - 1 : 0] orderType [0 : `LSB_SIZE - 1];
 reg busy [0 : `LSB_SIZE - 1];
-reg [`ROB_ID_WIDTH - 1: 0] entry [0 : `LSB_SIZE - 1]; // index in rob
+reg [`ROB_ID_WIDTH: 0] entry [0 : `LSB_SIZE - 1]; // index in rob
 reg [`VAL_WIDTH - 1 : 0] V1 [0 : `LSB_SIZE - 1];
 reg [`VAL_WIDTH - 1 : 0] V2 [0 : `LSB_SIZE - 1];
-reg [`ROB_ID_WIDTH - 1: 0] Q1 [0 : `LSB_SIZE - 1];
-reg [`ROB_ID_WIDTH - 1: 0] Q2 [0 : `LSB_SIZE - 1];
+reg [`ROB_ID_WIDTH: 0] Q1 [0 : `LSB_SIZE - 1];
+reg [`ROB_ID_WIDTH: 0] Q2 [0 : `LSB_SIZE - 1];
 reg [`ADDR_WIDTH - 1 : 0] addr [0 : `LSB_SIZE - 1];
 reg [`VAL_WIDTH - 1 : 0] res [0 : `LSB_SIZE - 1];
 reg [1 : 0] status [0 : `LSB_SIZE - 1];
@@ -85,7 +85,7 @@ assign isFull = (head == tail);
 reg reg_lsb2mem_store_en;
 reg reg_lsb2mem_load_en;
 reg [`LSB_ID_WIDTH - 1 : 0] reg_commit_id;
-reg [`ROB_ID_WIDTH - 1: 0] reg_lab2cdb;
+reg [`ROB_ID_WIDTH: 0] reg_lab2cdb;
 reg [`VAL_WIDTH - 1 : 0] reg_val2cdb;
 reg [`LSB_ID_WIDTH - 1 : 0] reg_mem2lsb_load_id;
 reg [31 : 0] counter;
@@ -109,11 +109,11 @@ integer i;
 integer flag;
 always @(posedge clk) begin
     counter <= counter + 1;
-         if (counter >= `START && counter <= `END_) begin
-         //$display("time -----------------> %d     lsb", counter);
-    //         $display("head=%d, tail=%d", head, tail);
+         if (counter >= `START && counter <= `END_ && `DEBUG) begin
+         $display("time -----------------> %d     lsb", counter);
+             $display("head=%d, tail=%d", head, tail);
      for (i = 0; i < `LSB_SIZE; i++) begin
-               // $display("entry=%d, V1=%d, V2=%d, busy=%d, status=%d, Q1=%d, Q2=%d", entry[i], V1[i], V2[i], busy[i], status[i], Q1[i], Q2[i]);
+                $display("entry=%d, V1=%d, V2=%d, busy=%d, status=%d, Q1=%d, Q2=%d", entry[i], V1[i], V2[i], busy[i], status[i], Q1[i], Q2[i]);
          end
          end
     if (rst_in || (flush && rdy_in)) begin
