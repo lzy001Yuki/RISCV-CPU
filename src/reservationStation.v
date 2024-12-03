@@ -68,6 +68,8 @@ end
 integer i;
 integer issue_flag;
 integer exe_flag;
+// integer issue_id;
+// integer exe_id;
 // find issue_id
 always @(negedge clk) begin
     if (lsb_cdb_en || rs_cdb_en || commit_en) begin
@@ -80,6 +82,8 @@ always @(negedge clk) begin
             end
         end
     end
+end
+always @(*) begin
     issue_flag = 0;
     exe_flag = 0;
     exe_id = 0;
@@ -97,6 +101,9 @@ always @(negedge clk) begin
             reg_alu_val2 = V2[i];
             reg_alu_entry = entry[i];
             exe_flag = 1;
+            if (counter >= `START && counter <= `END_ && `RS_DEBUG)begin
+                $display("exe: id=%d, counter=%d", i, counter);
+            end
         end
     end
     reg_execute = exe_flag ? 1 : 0;
@@ -108,7 +115,7 @@ reg [`VAL_WIDTH - 1 : 0] debug_V1_0;
 
 always @(posedge clk) begin
     counter <= counter + 1;
-      if (counter >= `START && counter <= `END_ && `DEBUG) begin
+      if (counter >= `START && counter <= `END_ && `RS_DEBUG) begin
            $display("reservatin_station------------- time-----", counter);
            for (i = 0; i < `RS_SIZE; i++) begin
              //if (busy[i]) begin
@@ -116,6 +123,9 @@ always @(posedge clk) begin
              //end
            end
       end
+          if (counter >= `START && counter <= `END_ && `RS_DEBUG)begin
+        $display("exe_status: exe_flag=%d, counter=%d", reg_execute, counter);
+    end
     if (rst_in || (flush && rdy_in)) begin
         for (i = 0; i < `RS_SIZE; i = i + 1) begin
             busy[i] <= 0;
@@ -196,21 +206,27 @@ always @(posedge clk) begin
         //     end
         // end
     end
+    // if (exe_flag) begin
+    //     busy[exe_id] <= 0;
+    // end
 end
 
 // connect to alu
 
 wire [`OP_WIDTH - 1 : 0] alu_type;
 reg [`OP_WIDTH - 1 : 0] reg_alu_type;
+assign alu_type = orderType[exe_id];
 assign alu_type = reg_alu_type;
 wire [`VAL_WIDTH - 1 : 0] alu_val1;
 reg [`VAL_WIDTH - 1 : 0] reg_alu_val1;
+assign alu_val1 = V1[exe_id];
 assign alu_val1 = reg_alu_val1;
 wire [`VAL_WIDTH - 1 : 0] alu_val2;
 reg [`VAL_WIDTH - 1 : 0] reg_alu_val2;
 assign alu_val2 = reg_alu_val2;
 wire [`ROB_ID_WIDTH: 0] alu_entry;
 reg [`ROB_ID_WIDTH: 0] reg_alu_entry;
+assign alu_entry = entry[exe_id];
 assign alu_entry = reg_alu_entry;
 
 initial begin

@@ -109,7 +109,7 @@ integer i;
 integer flag;
 always @(posedge clk) begin
     counter <= counter + 1;
-         if (counter >= `START && counter <= `END_ && `DEBUG) begin
+         if (counter >= `START && counter <= `END_ && `LSB_DEBUG) begin
          $display("time -----------------> %d     lsb", counter);
              $display("head=%d, tail=%d", head, tail);
      for (i = 0; i < `LSB_SIZE; i++) begin

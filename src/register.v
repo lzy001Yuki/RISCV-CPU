@@ -49,9 +49,11 @@ end
 integer i;
 always @(posedge clk) begin
     counter <= counter + 1;
-        if (counter >= `START && counter <= `END_) begin
+        if (counter >= `START && counter <= `END_ && `RF_DEBUG) begin
+            $display("register---------------%d", counter);
             //for (i = 0; i < `REG_SIZE; i++) begin
-             //$display("counter=%d, label=%d, val=%h", counter, label[11], value[11]);
+            $display("counter=%d, label=%d, val=%d", counter, label[13], value[13]);
+            $display("counter=%d, label=%d, val=%h", counter, label[25], value[25]);
             //end
          end
     if (rst_in || (flush && rdy_in)) begin

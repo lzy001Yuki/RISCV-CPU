@@ -29,6 +29,10 @@
 `define TAG_WIDTH 27
 `define INDEX_WIDTH 4
 `define OFFSET_WIDTH 2
-`define START 32'd12690
-`define END_ 32'd12695
-`define DEBUG 1
+`define START 32'd2825
+`define END_ 32'd2830
+`define DEBUG 0
+`define LSB_DEBUG 0
+`define RS_DEBUG 0
+`define RF_DEBUG 0
+`define ROB_DEBUG 0

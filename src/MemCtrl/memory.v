@@ -85,6 +85,7 @@ reg [31 : 0] counter;
 
 initial begin
     counter = 0;
+    current_rw = 0;
 end
 
 always @(posedge clk) begin
@@ -94,14 +95,16 @@ always @(posedge clk) begin
     end    
     if (rst_in || flush) begin
         ready <= 0;
-        current_addr <= 0;
-        current_res <= 0;
-        current_status <= 0;
-        current_data <= 0;
-        current_rw <= 0;
-        reg_inst_out <= 0;
-        reg_addr <= 0;
         cache_finish <= 0;
+        if (!current_rw) begin
+            current_addr <= 0;
+            current_res <= 0;
+            current_status <= 0;
+            current_data <= 0;
+            current_rw <= 0;
+            reg_inst_out <= 0;
+            reg_addr <= 0;
+        end
     end
     else if (!rdy_in) begin
         // do nothing

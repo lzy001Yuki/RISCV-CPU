@@ -36,13 +36,19 @@ always @(posedge clk) begin
     else if (rdy_in && rob2pred_en) begin
         BHTable[hash_index_rob] <= {BHTable[hash_index_rob][BHT_WIDTH - 1 : 1], pred_res};
         if (pred_res) begin
-            if (PHTable[hash_index_rob][BHTable[hash_index_rob]] != 2'b11) begin
+            if (PHTable[hash_index_rob][BHTable[hash_index_rob]] == 2'b10) begin
                 PHTable[hash_index_rob][BHTable[hash_index_rob]] <= PHTable[hash_index_rob][BHTable[hash_index_rob]] + 1;
+            end
+            else if (PHTable[hash_index_rob][BHTable[hash_index_rob]] == 2'b01) begin
+                PHTable[hash_index_rob][BHTable[hash_index_rob]] <= PHTable[hash_index_rob][BHTable[hash_index_rob]] - 1;
             end
         end
         else begin
-            if (PHTable[hash_index_rob][BHTable[hash_index_rob]] != 2'b00) begin
-                PHTable[hash_index_rob][BHTable[hash_index_rob]] <= PHTable[hash_index_rob][BHTable[hash_index_rob]] -1;
+            if (PHTable[hash_index_rob][BHTable[hash_index_rob]] >= 2'b10) begin
+                PHTable[hash_index_rob][BHTable[hash_index_rob]] <= PHTable[hash_index_rob][BHTable[hash_index_rob]] - 1;
+            end
+            else if (PHTable[hash_index_rob][BHTable[hash_index_rob]] <= 2'b01) begin
+                PHTable[hash_index_rob][BHTable[hash_index_rob]] <= PHTable[hash_index_rob][BHTable[hash_index_rob]] + 1;
             end
         end
     end
