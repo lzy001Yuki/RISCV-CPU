@@ -262,19 +262,19 @@ always @(posedge clk) begin
                             if (inst_in[11 : 10] == 2'b00) begin
                                 reg_orderType <= 7'b0011010; // c.srli
                                 reg_dec_rd <= {2'b0, inst_in[9 : 7]} + 8;
-                                reg_dec_imm <= {26'b0, inst_in[5], inst_in[4 : 0]};
+                                reg_dec_imm <= {26'b0, inst_in[12], inst_in[6 : 2]};
                                 reg_dec_rs1 <=  {2'b0, inst_in[9 : 7]} + 8;
                             end
                             else if (inst_in[11 : 10] == 2'b01) begin
                                 reg_orderType <= 7'b0011011; // c.srai
                                 reg_dec_rd <= {2'b0, inst_in[9 : 7]} + 8;
-                                reg_dec_imm <= {26'b0, inst_in[5], inst_in[4 : 0]};
+                                reg_dec_imm <= {26'b0, inst_in[12], inst_in[6 : 2]};
                                 reg_dec_rs1 <= {2'b0, inst_in[9 : 7]} + 8;
                             end
                             else if (inst_in[11 : 10] == 2'b10) begin
                                 reg_orderType <= {7'b0011110}; // c.andi
                                 reg_dec_rd <= {2'b0, inst_in[9 : 7]} + 8;
-                                reg_dec_imm <= {26'b0, inst_in[5], inst_in[4 : 0]};
+                                reg_dec_imm <= {26'b0, inst_in[12], inst_in[6 : 2]};
                                 reg_dec_rs1 <= {2'b0, inst_in[9 : 7]} + 8;
                             end
                             else if (inst_in[11 : 10] == 2'b11) begin
@@ -423,7 +423,9 @@ always @(posedge clk) begin
     else begin
         // reg_dec2lsb_en <= 0;
         // reg_dec2rs_en <= 0;
-        issue_en <= 0;
+        if ((robFull ? 0 : reg_dec2lsb_en ? lsbFull ? 0 : 1 : reg_dec2rs_en ? rsFull ? 0 : 1 : 0)) begin
+            issue_en <= 0;
+        end    
     end
 end
 

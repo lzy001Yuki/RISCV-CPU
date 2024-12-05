@@ -121,7 +121,7 @@ always @(posedge clk) begin
     end
     else begin
         reg_pred_en <= 0;
-        if (reg_inst_rdy) begin
+        if (reg_inst_rdy && dec2if_next_inst) begin
             reg_inst_rdy <= 0;
         end
         rob_stall <= rob_stall ? robFull ? 1 : 0 : 0;

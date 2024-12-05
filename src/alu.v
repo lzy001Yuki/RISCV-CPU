@@ -120,6 +120,7 @@ always @(posedge clk) begin
         end
         else begin
             ready <= 0;
+            cont <= 0;
         end
     end
 end

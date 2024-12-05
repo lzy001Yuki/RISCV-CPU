@@ -90,8 +90,8 @@ end
 
 always @(posedge clk) begin
     counter <= counter + 1;
-    if (lsb2mem_en && lsb2mem_store_en && lsb2mem_addr == 32'h30000) begin
-        //$display("counter=%d, addr=%h, value=%d", counter, lsb2mem_addr, lsb2mem_val);  
+    if (lsb2mem_en && lsb2mem_store_en && lsb2mem_addr == 32'h30000 && `MEM_DEBUG) begin
+        $display("counter=%d, addr=%h, value=%d", counter, lsb2mem_addr, lsb2mem_val);  
     end    
     if (rst_in || flush) begin
         ready <= 0;
