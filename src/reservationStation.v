@@ -56,10 +56,11 @@ reg [`VAL_WIDTH - 1 : 0] V2 [0 : `RS_SIZE - 1];
 reg [`ROB_ID_WIDTH: 0] Q1 [0 : `RS_SIZE - 1];
 reg [`ROB_ID_WIDTH: 0] Q2 [0 : `RS_SIZE - 1];
 reg [`OP_WIDTH - 1 : 0] orderType [0 : `RS_SIZE - 1];
-reg [`RS_ID_WIDTH - 1: 0] issue_id;
-reg [`RS_ID_WIDTH - 1: 0] exe_id;
+wire [`RS_ID_WIDTH: 0] issue_id;
+wire [`RS_ID_WIDTH: 0] exe_id;
+wire ready[0 : `RS_SIZE - 1];
 reg rsFull;
-reg reg_execute;
+wire execute;
 reg [31 : 0] counter;
 initial begin
     counter = 0;
@@ -68,8 +69,6 @@ end
 integer i;
 integer issue_flag;
 integer exe_flag;
-// integer issue_id;
-// integer exe_id;
 // find issue_id
 always @(negedge clk) begin
     if (lsb_cdb_en || rs_cdb_en || commit_en) begin
@@ -83,35 +82,68 @@ always @(negedge clk) begin
         end
     end
 end
-always @(*) begin
-    issue_flag = 0;
-    exe_flag = 0;
-    exe_id = 0;
-    issue_id = 0;
-    for (i = 0; i < `RS_SIZE; i++) begin
-        if (!busy[i] && !issue_flag) begin
-            issue_id = i;
-            issue_flag = 1;
-        end
-        if (busy[i] && !Q1[i] && !Q2[i] && !exe_flag) begin
-            exe_id = i;
-            busy[i] = 0;
-            reg_alu_type = orderType[i];
-            reg_alu_val1 = V1[i];
-            reg_alu_val2 = V2[i];
-            reg_alu_entry = entry[i];
-            exe_flag = 1;
-            if (counter >= `START && counter <= `END_ && `RS_DEBUG)begin
-                $display("exe: id=%d, counter=%d", i, counter);
-            end
-        end
-    end
-    reg_execute = exe_flag ? 1 : 0;
-    rsFull = issue_flag ? 0 : 1;
-end
+// always @(*) begin
+//     issue_flag = 0;
+//     exe_flag = 0;
+//     exe_id = 0;
+//     issue_id = 0;
+//     for (i = 0; i < `RS_SIZE; i++) begin
+//         if (!busy[i] && !issue_flag) begin
+//             issue_id = i;
+//             issue_flag = 1;
+//         end
+//         if (busy[i] && !Q1[i] && !Q2[i] && !exe_flag) begin
+//             exe_id = i;
+//             busy[i] = 0;
+//             reg_alu_type = orderType[i];
+//             reg_alu_val1 = V1[i];
+//             reg_alu_val2 = V2[i];
+//             reg_alu_entry = entry[i];
+//             exe_flag = 1;
+//             if (counter >= `START && counter <= `END_ && `RS_DEBUG)begin
+//                 $display("exe: id=%d, counter=%d", i, counter);
+//             end
+//         end
+//     end
+//     reg_execute = exe_flag ? 1 : 0;
+//     rsFull = issue_flag ? 0 : 1;
+// end
 
-assign isFull = rsFull;
-reg [`VAL_WIDTH - 1 : 0] debug_V1_0;
+// connect to alu
+
+wire [`OP_WIDTH - 1 : 0] alu_type;
+reg [`OP_WIDTH - 1 : 0] reg_alu_type;
+// assign alu_type = orderType[exe_id];
+// assign alu_type = reg_alu_type;
+wire [`VAL_WIDTH - 1 : 0] alu_val1;
+reg [`VAL_WIDTH - 1 : 0] reg_alu_val1;
+// assign alu_val1 = V1[exe_id];
+// assign alu_val1 = reg_alu_val1;
+wire [`VAL_WIDTH - 1 : 0] alu_val2;
+reg [`VAL_WIDTH - 1 : 0] reg_alu_val2;
+// assign alu_val2 = reg_alu_val2;
+wire [`ROB_ID_WIDTH: 0] alu_entry;
+reg [`ROB_ID_WIDTH: 0] reg_alu_entry;
+// assign alu_entry = entry[exe_id];
+// assign alu_entry = reg_alu_entry;
+
+generate
+genvar j;
+for (j = 0; j < `RS_SIZE; j = j + 1) begin
+    assign ready[j] = busy[j] && !Q1[j] && !Q2[j];
+end
+assign issue_id = !busy[0] ? 0 : !busy[1] ? 1 : !busy[2] ? 2 : !busy[3] ? 3 : !busy[4] ? 4 : !busy[5] ? 5 :! busy[6] ? 6 : !busy[7] ? 7 : 8;
+assign isFull = issue_id == `RS_SIZE;
+assign exe_id = ready[0] ? 0 : ready[1] ? 1 : ready[2] ? 2 : ready[3] ? 3 : ready[4] ? 4 : ready[5] ? 5 : ready[6] ? 6 : ready[7] ? 7 : 8;
+assign execute = (exe_id != `RS_SIZE);
+assign alu_type = execute ? orderType[exe_id] : 0;
+assign alu_val1 = execute ? V1[exe_id] : 0;
+assign alu_val2 = execute ? V2[exe_id] : 0;
+assign alu_entry = execute ? entry[exe_id] : 0;
+endgenerate
+
+//assign isFull = rsFull;
+
 
 always @(posedge clk) begin
     counter <= counter + 1;
@@ -124,7 +156,7 @@ always @(posedge clk) begin
            end
       end
           if (counter >= `START && counter <= `END_ && `RS_DEBUG)begin
-        $display("exe_status: exe_flag=%d, counter=%d", reg_execute, counter);
+        $display("exe_status: exe_flag=%d, counter=%d", execute, counter);
     end
     if (rst_in || (flush && rdy_in)) begin
         for (i = 0; i < `RS_SIZE; i = i + 1) begin
@@ -135,12 +167,9 @@ always @(posedge clk) begin
             Q1[i] <= 0;
             Q2[i] <= 0;
             orderType[i] <= 0;
-            issue_id <= 3'b000;
-            exe_id <= 3'b000;
         end
     end else if (!rdy_in) begin
     end else  begin
-        debug_V1_0 <= V1[0];
         // issue
         if (dec2rs_en) begin
             entry[issue_id] <= newTag;
@@ -209,25 +238,12 @@ always @(posedge clk) begin
     // if (exe_flag) begin
     //     busy[exe_id] <= 0;
     // end
+    if (execute) begin
+        busy[exe_id] <= 0;
+    end    
 end
 
-// connect to alu
 
-wire [`OP_WIDTH - 1 : 0] alu_type;
-reg [`OP_WIDTH - 1 : 0] reg_alu_type;
-assign alu_type = orderType[exe_id];
-assign alu_type = reg_alu_type;
-wire [`VAL_WIDTH - 1 : 0] alu_val1;
-reg [`VAL_WIDTH - 1 : 0] reg_alu_val1;
-assign alu_val1 = V1[exe_id];
-assign alu_val1 = reg_alu_val1;
-wire [`VAL_WIDTH - 1 : 0] alu_val2;
-reg [`VAL_WIDTH - 1 : 0] reg_alu_val2;
-assign alu_val2 = reg_alu_val2;
-wire [`ROB_ID_WIDTH: 0] alu_entry;
-reg [`ROB_ID_WIDTH: 0] reg_alu_entry;
-assign alu_entry = entry[exe_id];
-assign alu_entry = reg_alu_entry;
 
 initial begin
     reg_alu_type = 0;
@@ -241,7 +257,7 @@ alu alu(
     .rst_in(rst_in),
     .rdy_in(rdy_in),
 
-    .execute(reg_execute),
+    .execute(execute),
     .flush(flush),
     .type(alu_type),
     .val1(alu_val1),

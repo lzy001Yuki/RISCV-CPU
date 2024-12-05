@@ -118,7 +118,7 @@ icache ins_cache(
     .next_inst_out(cache2if_inst_out)
 );
 
-assign inst_rdy = (cache_rdy || mem_rdy) && if2ctrl_en;
+assign inst_rdy = (cache_rdy || mem_rdy) ;
 assign inst_out = cache_rdy ? cache2if_inst_out : mem2if_inst_out;
 
 endmodule

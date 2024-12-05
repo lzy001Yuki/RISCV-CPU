@@ -104,6 +104,7 @@ always @(posedge clk) begin
             current_rw <= 0;
             reg_inst_out <= 0;
             reg_addr <= 0;
+            reg_lsb2mem_en <= 0;
         end
     end
     else if (!rdy_in) begin

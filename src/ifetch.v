@@ -130,10 +130,11 @@ always @(posedge clk) begin
     end
 end
 
-assign next_inst = !if_stall; // to cache
+assign next_inst = !if_stall && dec2if_next_inst; // to cache
 assign pc_out = reg_pc_out;
 assign next_PC = reg_next_PC;
 assign inst_out = reg_inst_out;
-assign if2dec = reg_inst_rdy && !rs_stall && !lsb_stall && !rob_stall && dec2if_next_inst;
+//assign if2dec = reg_inst_rdy && !rs_stall && !lsb_stall && !rob_stall && dec2if_next_inst;
+assign if2dec = reg_inst_rdy && dec2if_next_inst;
 assign if2pred_en = reg_pred_en;
 endmodule

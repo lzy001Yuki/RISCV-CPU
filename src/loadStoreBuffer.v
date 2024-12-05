@@ -133,6 +133,9 @@ always @(posedge clk) begin
             store_write_id <= 4'b1000;
             reg_lsb2mem_store_en <= 0;
             reg_lsb2mem_load_en <= 0;
+            reg_lsb2cdb_en <= 0;
+            reg_lab2cdb <= 0;
+            reg_val2cdb <= 0;
         end
     end
     else if (rdy_in) begin
