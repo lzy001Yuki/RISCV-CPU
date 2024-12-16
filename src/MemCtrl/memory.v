@@ -53,7 +53,7 @@ reg ready;
 reg [`LSB_ID_WIDTH - 1 : 0] reg_lsb2mem_load_id;
 reg store_or_load;
 reg [`VAL_WIDTH - 1 : 0] reg_lsb2mem_val;
-reg [``FUNCT3_WIDTH - 1 : 0] reg_lsb2mem_type;
+reg [`FUNCT3_WIDTH - 1 : 0] reg_lsb2mem_type;
 
 reg [`INST_WIDTH - 1 : 0] reg_inst_out;
 reg cache_finish;

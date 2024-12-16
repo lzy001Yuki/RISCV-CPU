@@ -108,8 +108,8 @@ always @(posedge clk) begin
                     3'b100: val_out_reg <= val1 ^ val2; // xor
                     3'b101: begin
                         case (type[0])
-                            1'b0: val_out_reg <= val1 << val2; // sll
-                            1'b1: val_out_reg <= val1 >> val2; // srl
+                            1'b0: val_out_reg <= val1 >> val2; // srl
+                            1'b1: val_out_reg <= $signed(val1) >> val2; // sra
                         endcase
                     end
                     3'b110: val_out_reg <= val1 | val2;

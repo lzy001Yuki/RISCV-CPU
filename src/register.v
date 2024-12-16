@@ -33,17 +33,17 @@ initial begin
     counter = 0;
 end
 
-always @(commit_en) begin
-    if (rob2rf_commit_rd) begin
-        value[rob2rf_commit_rd] <= rob2rf_commit_res;
-        if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
-            label[rob2rf_commit_rd] <= 0;
-            if (dec2rf_rd == 1) begin
-                //$display("ra change: --- %d, counter=%d", rob2rf_commit_res, counter);
-            end  
-        end
-    end
-end
+// always @(commit_en) begin
+//     if (rob2rf_commit_rd) begin
+//         value[rob2rf_commit_rd] <= rob2rf_commit_res;
+//         if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
+//             label[rob2rf_commit_rd] <= 0;
+//             if (dec2rf_rd == 1) begin
+//                 //$display("ra change: --- %d, counter=%d", rob2rf_commit_res, counter);
+//             end  
+//         end
+//     end
+// end
 
 
 integer i;
@@ -66,6 +66,15 @@ always @(posedge clk) begin
     end
     else if (dec2rob_en && dec2rf_rd) begin  
         label[dec2rf_rd] <= rob2rf_tag;
+    end
+    if (rob2rf_commit_rd && commit_en) begin
+        value[rob2rf_commit_rd] <= rob2rf_commit_res;
+        if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
+            label[rob2rf_commit_rd] <= 0;
+            if (dec2rf_rd == 1) begin
+                //$display("ra change: --- %d, counter=%d", rob2rf_commit_res, counter);
+            end  
+        end
     end
 end
 
