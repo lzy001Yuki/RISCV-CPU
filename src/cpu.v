@@ -40,6 +40,8 @@ controller ctrl(
   .if2ctrl_en(if2ctrl_en),
   .next_PC(if2ctrl_next_PC),
 
+  .commit_cnt(commit_cnt),
+
   .mem2lsb_load_id(mem2lsb_load_id),
   .mem2lsb_load_val(mem2lsb_load_val),
   .mem_busy(mem_busy),
@@ -212,11 +214,15 @@ reorderBuffer rob(
   .rob2lsb_store_en(rob2lsb_store_en),
   .store_index(store_index),
 
+  .cnt_com(commit_cnt),
+
   .newPC(rob2if_newPC),
   .flush_out(rob_flush),
 
   .lsbFull(lsbFull)
 );
+
+wire [31 : 0] commit_cnt;
 
 wire [`REG_WIDTH - 1 : 0] rob2rf_commit_rd;
 wire [`VAL_WIDTH - 1 : 0] rob2rf_commit_res;

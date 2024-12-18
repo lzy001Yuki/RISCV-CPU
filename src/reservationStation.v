@@ -71,16 +71,16 @@ integer issue_flag;
 integer exe_flag;
 // find issue_id
 always @(negedge clk) begin
-    if (lsb_cdb_en || rs_cdb_en || commit_en) begin
-        for (i = 0; i < `RS_SIZE; i++) begin
-            if (busy[i]) begin
-                V1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q1[i] == commit_lab && commit_en) ? commit_val : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V1[i];
-                Q1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q1[i] == commit_lab && commit_en) ? 0 : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q1[i];
-                V2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q2[i] == commit_lab && commit_en) ? commit_val : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V2[i];
-                Q2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q2[i] == commit_lab && commit_en) ? 0 : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q2[i];
-            end
-        end
-    end
+    // if (lsb_cdb_en || rs_cdb_en || commit_en) begin
+    //     for (i = 0; i < `RS_SIZE; i++) begin
+    //         if (busy[i]) begin
+    //             V1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q1[i] == commit_lab && commit_en) ? commit_val : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V1[i];
+    //             Q1[i] = (Q1[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q1[i] == commit_lab && commit_en) ? 0 : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q1[i];
+    //             V2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q2[i] == commit_lab && commit_en) ? commit_val : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V2[i];
+    //             Q2[i] = (Q2[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q2[i] == commit_lab && commit_en) ? 0 : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q2[i];
+    //         end
+    //     end
+    // end
 end
 // always @(*) begin
 //     issue_flag = 0;
@@ -234,6 +234,16 @@ always @(posedge clk) begin
         //         end
         //     end
         // end
+        if (lsb_cdb_en || rs_cdb_en || commit_en) begin
+        for (i = 0; i < `RS_SIZE; i++) begin
+            if (busy[i]) begin
+                V1[i] <= (Q1[i]) ? (Q1[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q1[i] == commit_lab && commit_en) ? commit_val : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V1[i] : V1[i];
+                Q1[i] <= (Q1[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q1[i] == commit_lab && commit_en) ? 0 : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q1[i];
+                V2[i] <= (Q2[i]) ? (Q2[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q2[i] == commit_lab && commit_en) ? commit_val : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V2[i] : V2[i];
+                Q2[i] <= (Q2[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q2[i] == commit_lab && commit_en) ? 0 : (Q2[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q2[i];
+            end
+        end
+    end
     end
     // if (exe_flag) begin
     //     busy[exe_id] <= 0;

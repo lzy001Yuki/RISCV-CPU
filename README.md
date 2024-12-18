@@ -2,6 +2,8 @@
 
 This project aims to accomplish CPU design supporting RISCV-32.
 
+Here is the simple instruction: [CPU2024](https://github.com/ACMClassCourse-2023/CPU2024/)
+
 ## About Overall Design
 <img src="figures/myTomasulo(3).png" width="500" align=center />
 

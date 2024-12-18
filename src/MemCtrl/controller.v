@@ -18,6 +18,8 @@ module controller(
     input wire if2ctrl_en,
     input wire [`ADDR_WIDTH - 1 : 0] next_PC,
 
+    input wire [31 : 0] commit_cnt,
+
     // from lsb
     input wire [`ADDR_WIDTH - 1 : 0] lsb2mem_addr,
     input wire [`VAL_WIDTH - 1 : 0] lsb2mem_val,
@@ -88,6 +90,8 @@ memory mem (
     .mem2cache_tag(mem2cache_tag),
     .mem2cache_upd(mem2cache_upd),
     .mem2cache_PC(mem2cache_PC),
+
+    .commit_cnt(commit_cnt),
 
     .mem_rdy(mem_rdy),
     .mem2if_inst_out(mem2if_inst_out)

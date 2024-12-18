@@ -12,6 +12,7 @@ module memory(
     output wire mem_rw, // 1 for write
     output wire [`ADDR_WIDTH - 1 : 0] mem_aout,
     output wire [7 : 0] mem_dout,
+    input wire [31 : 0] commit_cnt,
 
     // from lsb
     input wire [`ADDR_WIDTH - 1 : 0] lsb2mem_addr,
@@ -91,7 +92,7 @@ end
 always @(posedge clk) begin
     counter <= counter + 1;
     if (lsb2mem_en && lsb2mem_store_en && lsb2mem_addr == 32'h30000 && `MEM_DEBUG) begin
-        $display("counter=%d, addr=%h, value=%d", counter, lsb2mem_addr, lsb2mem_val);  
+        $display("counter=%d, addr=%h, value=%d, commit_cnt=%d", counter, lsb2mem_addr, lsb2mem_val, commit_cnt);  
     end    
     if (rst_in || flush) begin
         ready <= 0;

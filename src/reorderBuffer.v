@@ -49,6 +49,8 @@ module reorderBuffer(
 
     output wire robFull,
 
+    output wire [31 : 0] cnt_com,
+
     // to predictor
     output wire pred_res,
     output wire [`ADDR_WIDTH - 1 : 0] rob2pre_curPC,
@@ -103,6 +105,8 @@ initial begin
     commit_cnt = 0;
 end
 
+wire [2 : 0] head_rdy_type = orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4];
+
 integer i;
 
 always @(posedge clk) begin
@@ -111,7 +115,7 @@ always @(posedge clk) begin
             $display("time----> %d, head=%d, tail=%d", counter, head, tail);
          for (i = 0; i < `ROB_SIZE; i++) begin
             //if (ready[i]) begin
-             $display("%d, label=%d, ready=%d, res=%d, PC=%h", i, label[i], ready[i], res[i], nowPC[i]);
+             $display("%d, label=%d, ready=%d, res=%d, PC=%h, jump=%h", i, label[i], ready[i], res[i], nowPC[i], jump[i]);
              //end
             end
         end
@@ -150,6 +154,9 @@ always @(posedge clk) begin
         if (rs_cdb_en) begin
             ready[rs_cdb2lab == `ROB_SIZE ? 0 : rs_cdb2lab] <= 1;
             res[rs_cdb2lab == `ROB_SIZE ? 0 : rs_cdb2lab] <= rs_cdb2val;
+            if (`START <= counter && counter <= `END_ && `ROB_DEBUG) begin
+            $display("CDB_RS---> %d, lab=%d, val=%d", counter, rs_cdb2lab, rs_cdb2val);
+        end
         end
         if (lsb_cdb_en) begin
             ready[lsb_cdb2lab == `ROB_SIZE ? 0 : lsb_cdb2lab] <= 1;
@@ -160,7 +167,6 @@ always @(posedge clk) begin
         reg_rob2lsb_store_en <= 0;
         reg_commit_en <= 0;
         if (ready[(head == `ROB_SIZE - 1) ? 0 : head + 1] && ((head == `ROB_SIZE - 1) ? 0 : head + 1) != tail) begin
-            // consider how to exit????
             commit_inst <= rob_inst[(head == `ROB_SIZE - 1) ? 0 : head + 1];
             if (orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1][6 : 4] == `OP_B_TYPE && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JAL && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JALR) begin
                 head <= head + 1;
@@ -215,14 +221,24 @@ end
 assign newTag = tag;
 assign robFull = (head == tail);
 assign flush_out = reg_flush;
-assign pred_res = reg_pred_res;
-assign rob2pre_curPC = reg_rob2pre_curPC;
-assign rob2pred_en = reg_update;
+
+assign pred_res = ((res[(head == `ROB_SIZE - 1) ? 0 : head + 1] == pred_result[(head == `ROB_SIZE - 1) ? 0 : head + 1])) ? 1 : 0;
+assign rob2pre_curPC = nowPC[(head == `ROB_SIZE - 1) ? 0 : head + 1];
+assign rob2pred_en = (head_rdy_type == `OP_B_TYPE && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JAL && orderType[(head == `ROB_SIZE - 1) ? 0 : head + 1] != `OP_JALR) ? 1 : 0;
+assign commit_rd = (head_rdy_type != `OP_S_TYPE && dest[(head == `ROB_SIZE - 1) ? 0 : head + 1]) ? dest[(head == `ROB_SIZE - 1) ? 0 : head + 1] : 0;
+assign commit_res = commit_rd ? res[(head == `ROB_SIZE - 1) ? 0 : head + 1] : 0;
+assign commit_lab = commit_rd ? label[(head == `ROB_SIZE - 1) ? 0 : head + 1] : 0;
+assign commit_en = ready[(head == `ROB_SIZE - 1) ? 0 : head + 1] && ((head == `ROB_SIZE - 1) ? 0 : head + 1) != tail;
+
+// assign commit_rd = reg_commit_rd;
+// assign commit_res = reg_commit_res;
+// assign commit_lab = reg_commit_lab;
+// assign commit_en = reg_commit_en;
+// assign pred_res = reg_pred_res;
+// assign rob2pre_curPC = reg_rob2pre_curPC;
+// assign rob2pred_en = reg_update;
+
 assign newPC = reg_newPC;
-assign commit_rd = reg_commit_rd;
-assign commit_res = reg_commit_res;
-assign commit_lab = reg_commit_lab;
-assign commit_en = reg_commit_en;
 assign label1 = rf_label1;
 assign label2 = rf_label2;
 assign res1 = rf_label1 ? res[rf_label1 == `ROB_SIZE ? 0 : rf_label1] : rf_val1;
@@ -231,4 +247,5 @@ assign ready1 = rf_label1 ? ready[rf_label1 == `ROB_SIZE ? 0 : rf_label1] : 1;
 assign ready2 = rf_label2 ? ready[rf_label2 == `ROB_SIZE ? 0 : rf_label2] : 1;
 assign rob2lsb_store_en = reg_rob2lsb_store_en;
 assign store_index = reg_store_index;
+assign cnt_com = commit_cnt;
 endmodule

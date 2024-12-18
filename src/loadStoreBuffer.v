@@ -258,33 +258,33 @@ always @(posedge clk) begin
         for (i = 0; i < `LSB_SIZE; i = i + 1) begin
             if (busy[i]) begin
                 if (rs_cdb_en) begin
-                if (rs_cdb2lab == Q1[i]) begin
-                    V1[i] = nodeType[i] ? rs_cdb2val + V1[i] : rs_cdb2val;
-                    Q1[i] = 0;
+                if (Q1[i] && rs_cdb2lab == Q1[i]) begin
+                    V1[i] <= nodeType[i] ? rs_cdb2val + V1[i] : rs_cdb2val;
+                    Q1[i] <= 0;
                 end
-                else if (rs_cdb2lab == Q2[i]) begin
-                    V2[i] = rs_cdb2val;
-                    Q2[i] = 0;
+                else if (Q2[i] && rs_cdb2lab == Q2[i]) begin
+                    V2[i] <= rs_cdb2val;
+                    Q2[i] <= 0;
                 end
                 end
                 if (cdb2lsb_en) begin
-                if (lsb_cdb2lab == Q1[i]) begin
-                    V1[i] = nodeType[i] ? lsb_cdb2val + V1[i] : lsb_cdb2val;
-                    Q1[i] = 0;
+                if (Q1[i] && lsb_cdb2lab == Q1[i]) begin
+                    V1[i] <= nodeType[i] ? lsb_cdb2val + V1[i] : lsb_cdb2val;
+                    Q1[i] <= 0;
                 end
-                else if (lsb_cdb2lab == Q2[i]) begin
-                    V2[i] = lsb_cdb2val;
-                    Q2[i] = 0;
+                else if (Q2[i] && lsb_cdb2lab == Q2[i]) begin
+                    V2[i] <= lsb_cdb2val;
+                    Q2[i] <= 0;
                 end
                 end
                 if (commit_en) begin
-                if (commit_lab == Q1[i]) begin
-                    V1[i] = nodeType[i] ? commit_val + V1[i] : commit_val;
-                    Q1[i] = 0;
+                if (Q1[i] && commit_lab == Q1[i]) begin
+                    V1[i] <= nodeType[i] ? commit_val + V1[i] : commit_val;
+                    Q1[i] <= 0;
                 end
-                else if (commit_lab == Q2[i]) begin
-                    V2[i] = commit_val;
-                    Q2[i] = 0;
+                else if (Q2[i] && commit_lab == Q2[i]) begin
+                    V2[i] <= commit_val;
+                    Q2[i] <= 0;
                 end
                 end
             end                                                                                                                                  

@@ -33,17 +33,16 @@ initial begin
     counter = 0;
 end
 
-// always @(commit_en) begin
-//     if (rob2rf_commit_rd) begin
-//         value[rob2rf_commit_rd] <= rob2rf_commit_res;
-//         if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
-//             label[rob2rf_commit_rd] <= 0;
-//             if (dec2rf_rd == 1) begin
-//                 //$display("ra change: --- %d, counter=%d", rob2rf_commit_res, counter);
-//             end  
-//         end
-//     end
-// end
+  always @(commit_en) begin
+       if (rob2rf_commit_rd && !`NOW) begin
+           value[rob2rf_commit_rd] <= rob2rf_commit_res;
+           if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
+               label[rob2rf_commit_rd] <= 0;
+                   //$display("rf change: ---lab== %d, val==%d, counter=%d", rob2rf_commit_lab, rob2rf_commit_res, counter);
+
+           end
+       end
+  end
 
 
 integer i;
@@ -53,9 +52,18 @@ always @(posedge clk) begin
             $display("register---------------%d", counter);
             //for (i = 0; i < `REG_SIZE; i++) begin
             $display("counter=%d, label=%d, val=%d", counter, label[13], value[13]);
-            $display("counter=%d, label=%d, val=%h", counter, label[25], value[25]);
+            //$display("counter=%d, label=%d, val=%h", counter, label[25], value[25]);
             //end
          end
+    if (rob2rf_commit_rd && commit_en && `NOW && (!flush && rdy_in)) begin
+        value[rob2rf_commit_rd] <= rob2rf_commit_res;
+        if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
+            label[rob2rf_commit_rd] <= 0;
+            if (counter >= `START && counter <= `END_ && `RF_DEBUG) begin
+            $display("rf change: ---lab== %d, val==%d, counter=%d", rob2rf_commit_lab, rob2rf_commit_res, counter); 
+            end
+        end
+    end
     if (rst_in || (flush && rdy_in)) begin
         for (i = 0; i < `REG_SIZE; i++) begin
             label[i] <= 0;
@@ -66,15 +74,9 @@ always @(posedge clk) begin
     end
     else if (dec2rob_en && dec2rf_rd) begin  
         label[dec2rf_rd] <= rob2rf_tag;
-    end
-    if (rob2rf_commit_rd && commit_en) begin
-        value[rob2rf_commit_rd] <= rob2rf_commit_res;
-        if (label[rob2rf_commit_rd] == rob2rf_commit_lab) begin
-            label[rob2rf_commit_rd] <= 0;
-            if (dec2rf_rd == 1) begin
-                //$display("ra change: --- %d, counter=%d", rob2rf_commit_res, counter);
-            end  
-        end
+        if (counter >= `START && counter <= `END_ && `RF_DEBUG) begin
+            $display("rf change: ---lab== %d, reg==%d, counter=%d", rob2rf_tag, dec2rf_rd, counter); 
+            end
     end
 end
 
