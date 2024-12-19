@@ -149,7 +149,7 @@ always @(posedge clk) begin
     counter <= counter + 1;
       if (counter >= `START && counter <= `END_ && `RS_DEBUG) begin
            $display("reservatin_station------------- time-----", counter);
-           for (i = 0; i < `RS_SIZE; i++) begin
+           for (i = 0; i < `RS_SIZE; i=i+1) begin
              //if (busy[i]) begin
             $display("busy=%d, entry=%d, Q1=%d, Q2=%d, V1=%d, V2=%d", busy[i], entry[i], Q1[i], Q2[i], V1[i], V2[i]);
              //end
@@ -235,7 +235,7 @@ always @(posedge clk) begin
         //     end
         // end
         if (lsb_cdb_en || rs_cdb_en || commit_en) begin
-        for (i = 0; i < `RS_SIZE; i++) begin
+        for (i = 0; i < `RS_SIZE; i=i+1) begin
             if (busy[i]) begin
                 V1[i] <= (Q1[i]) ? (Q1[i] == rs_cdb2lab && rs_cdb_en) ? rs_cdb2val : (Q1[i] == commit_lab && commit_en) ? commit_val : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? lsb_cdb2val : V1[i] : V1[i];
                 Q1[i] <= (Q1[i] == rs_cdb2lab && rs_cdb_en) ? 0 : (Q1[i] == commit_lab && commit_en) ? 0 : (Q1[i] == lsb_cdb2lab && lsb_cdb_en) ? 0 : Q1[i];

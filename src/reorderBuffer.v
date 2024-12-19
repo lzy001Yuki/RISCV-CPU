@@ -113,7 +113,7 @@ always @(posedge clk) begin
     counter <= counter + 1;
         if (`START <= counter && counter <= `END_ && `ROB_DEBUG) begin
             $display("time----> %d, head=%d, tail=%d", counter, head, tail);
-         for (i = 0; i < `ROB_SIZE; i++) begin
+         for (i = 0; i < `ROB_SIZE; i=i+1) begin
             //if (ready[i]) begin
              $display("%d, label=%d, ready=%d, res=%d, PC=%h, jump=%h", i, label[i], ready[i], res[i], nowPC[i], jump[i]);
              //end
@@ -124,7 +124,7 @@ always @(posedge clk) begin
         tag <= 1;
         head <= 0;
         tail <= 1;
-        for (i = 0; i < `ROB_SIZE; i++) begin
+        for (i = 0; i < `ROB_SIZE; i=i+1) begin
             ready[i] <= 0;
             res[i] <= 0;
             nowPC[i] <= 0;

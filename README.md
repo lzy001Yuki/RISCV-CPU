@@ -16,7 +16,7 @@ Here is the simple instruction: [CPU2024](https://github.com/ACMClassCourse-2023
 
 [RV32C指令](https://blog.csdn.net/qq_38798111/article/details/129745919)
 
-[Vivado教程]（https://vlab.ustc.edu.cn/guide/doc_vivado.html）
+[Vivado教程](https://vlab.ustc.edu.cn/guide/doc_vivado.html)
 
 ### Tomasulo Outline
 <img src="figures/Tomasulo.jpg" width="500" align=center />

@@ -112,7 +112,7 @@ always @(posedge clk) begin
          if (counter >= `START && counter <= `END_ && `LSB_DEBUG) begin
          $display("time -----------------> %d     lsb", counter);
              $display("head=%d, tail=%d", head, tail);
-     for (i = 0; i < `LSB_SIZE; i++) begin
+     for (i = 0; i < `LSB_SIZE; i=i+1) begin
                 $display("entry=%d, V1=%d, V2=%d, busy=%d, status=%d, Q1=%d, Q2=%d", entry[i], V1[i], V2[i], busy[i], status[i], Q1[i], Q2[i]);
          end
          end

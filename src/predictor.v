@@ -26,9 +26,9 @@ assign prediction = (if2pred_en) ? PHTable[hash_index_if][BHTable[hash_index_if]
 integer i, j;
 always @(posedge clk) begin
     if (rst_in) begin
-        for (i = 0; i < PHT_SIZE; i++) begin
+        for (i = 0; i < PHT_SIZE; i=i+1) begin
             BHTable[i] = 0;
-            for (j = 0; j < BHT_SIZE; j++) begin
+            for (j = 0; j < BHT_SIZE; j=j+1) begin
                 PHTable[i][j] = 2'b00;
             end
         end

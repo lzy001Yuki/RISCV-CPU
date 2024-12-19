@@ -36,19 +36,19 @@ always @(*) begin
     reg_lsb_val <= lsb_cdb2val_in;
 end
 
-always @(posedge clk) begin
-    if (rst_in || flush) begin
-        reg_rs_en <= 0;
-        reg_lsb_en <= 0;
-        reg_rs_lab <= 0;
-        reg_lsb_lab <= 0;
-        reg_rs_val <= 0;
-        reg_lsb_val <= 0;
-    end
-    else if (rdy_in) begin
+// always @(posedge clk) begin
+//     if (rst_in || flush) begin
+//         reg_rs_en <= 0;
+//         reg_lsb_en <= 0;
+//         reg_rs_lab <= 0;
+//         reg_lsb_lab <= 0;
+//         reg_rs_val <= 0;
+//         reg_lsb_val <= 0;
+//     end
+//     else if (rdy_in) begin
 
-    end
-end
+//     end
+// end
 
 assign rs_cdb_en = reg_rs_en;
 assign lsb_cdb_en = reg_lsb_en;
