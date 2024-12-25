@@ -61,15 +61,17 @@ reg cache_finish;
 reg reg_lsb2mem_en;
 initial begin
     reg_lsb2mem_en = 0;
+    io_ready = 1;
 end
 // 00 for none, 01 for lsb_working, 10 for ifetch_working, no changes until finished
 wire is_io_op;
-assign is_io_op = (lsb2mem_en && lsb2mem_addr == 32'h30000);
+assign is_io_op = (lsb2mem_addr == 32'h30000);
 wire io_fail;
 assign io_fail = is_io_op && io_buffer_full;
-assign mem_aout = (lsb2mem_en && !io_fail) ? lsb2mem_addr : current_status ? current_addr : cache2mem_PC;
-assign mem_dout = (lsb2mem_store_en && !io_fail) ? lsb2mem_val[7 : 0]: current_data;
-assign mem_rw = (lsb2mem_en && !io_fail) ? lsb2mem_store_en : current_rw;
+assign mem_aout = (lsb2mem_en && !io_fail) ? lsb2mem_addr : (current_status || (!io_ready && !io_fail)) ? current_addr : cache2mem_PC;
+assign mem_dout = (lsb2mem_store_en && !io_fail) ? lsb2mem_val[7 : 0] : current_data;
+assign mem_rw = (lsb2mem_en && !io_fail) ? lsb2mem_store_en : (current_status || !io_ready && !io_fail) ? current_rw : 0;
+reg io_ready;
 
 
 function [`VAL_WIDTH - 1 : 0] load_result;
@@ -143,6 +145,7 @@ always @(posedge clk) begin
                     current_data <= lsb2mem_val[7 : 0];
                     current_rw <= lsb2mem_store_en;
                     reg_lsb2mem_en <= 1;
+                    io_ready <= 0;
                     current_status <= 2'b00;
                 end
                 else begin
@@ -166,17 +169,18 @@ always @(posedge clk) begin
                     //     current_data <= reg_lsb2mem_val[15 : 8];
                     // end                        
                     // else begin
-                    //     current_addr <= (lsb2mem_addr[17 : 16] == 2'b11) ? 0 : reg_addr;
-                    //     reg_addr <= lsb2mem_addr;
-                    //     current_rw <= lsb2mem_store_en;
-                    //     store_or_load <= lsb2mem_store_en;
-                    //     if (!io_fail) begin
-                    //         current_status <= 2'b00;
-                    //         current_data <= 0;
-                    //         current_rw <= 0;
-                    //         ready <= 1;
-                    //         reg_lsb2mem_en <= 0;
-                    //     end
+                        //current_addr <= (lsb2mem_addr[17 : 16] == 2'b11) ? 0 : reg_addr;
+                        //reg_addr <= lsb2mem_addr;
+                        //current_rw <= lsb2mem_store_en;
+                        //store_or_load <= lsb2mem_store_en;
+                        if (!io_fail) begin
+                            current_status <= 2'b00;
+                            current_data <= 0;
+                            current_rw <= 0;
+                            ready <= 1;
+                            io_ready <= 1;
+                            reg_lsb2mem_en <= 0;
+                        end
                     // end
                 end
                 2'b01: begin
