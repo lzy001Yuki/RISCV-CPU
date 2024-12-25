@@ -9,6 +9,14 @@ For simulator, click here: [RISCV-Simulator](https://github.com/lzy001Yuki/RISCV
 ## About Overall Design
 <img src="figures/myTomasulo(3).png" width="500" align=center />
 
+## Something deserved to be written down
+
+Thanks for **stargazer**'s help in fpga environment configuration!!! :smile:
+
+Here are some problems I have met:
+
+
+
 ## References:
 
 [五级流水线CPU设计](https://notes.widcard.win/undergraduate/cs/report/)

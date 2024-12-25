@@ -63,9 +63,13 @@ initial begin
     reg_lsb2mem_en = 0;
 end
 // 00 for none, 01 for lsb_working, 10 for ifetch_working, no changes until finished
-
-assign mem_aout = (lsb2mem_en) ? lsb2mem_addr : current_status ? current_addr : cache2mem_PC;
-assign mem_dout = (lsb2mem_store_en) ? lsb2mem_val[7 : 0]: current_data;
+wire is_io_op;
+assign is_io_op = (lsb2mem_en && lsb2mem_addr == 32'h30000);
+wire io_fail;
+assign io_fail = is_io_op && io_buffer_full;
+assign mem_aout = (lsb2mem_en && !io_fail) ? lsb2mem_addr : current_status ? current_addr : cache2mem_PC;
+assign mem_dout = (lsb2mem_store_en && !io_fail) ? lsb2mem_val[7 : 0]: current_data;
+assign mem_rw = (lsb2mem_en && !io_fail) ? lsb2mem_store_en : current_rw;
 
 
 function [`VAL_WIDTH - 1 : 0] load_result;
@@ -134,32 +138,46 @@ always @(posedge clk) begin
             end                        
             else begin
                 current_addr <= (lsb2mem_addr[17 : 16] == 2'b11) ? 0 : lsb2mem_addr;
-                current_status <= 2'b00;
-                current_data <= 0;
-                current_rw <= 0;
-                reg_lsb2mem_en <= 0;
-                ready <= 1;
+                if (io_fail) begin
+                    ready <= 0;
+                    current_data <= lsb2mem_val[7 : 0];
+                    current_rw <= lsb2mem_store_en;
+                    reg_lsb2mem_en <= 1;
+                    current_status <= 2'b00;
+                end
+                else begin
+                    current_status <= 2'b00;
+                    current_data <= 0;
+                    current_rw <= 0;
+                    reg_lsb2mem_en <= 0;
+                    ready <= 1;
+                end
             end
         end
         else begin
             case (current_status) 
                 2'b00: begin
-                    reg_addr <= lsb2mem_addr;
-                    current_rw <= lsb2mem_store_en;
-                    store_or_load <= lsb2mem_store_en;
-                    if (reg_lsb2mem_type[1 : 0]) begin
-                        current_addr <= lsb2mem_addr + 1;
-                        current_status <= 2'b01;
-                        current_data <= reg_lsb2mem_val[15 : 8];
-                    end                        
-                    else begin
-                        current_addr <= (lsb2mem_addr[17 : 16] == 2'b11) ? 0 : reg_addr;
-                        current_status <= 2'b00;
-                        current_data <= 0;
-                        current_rw <= 0;
-                        ready <= 1;
-                        reg_lsb2mem_en <= 0;
-                    end
+                    // if (reg_lsb2mem_type[1 : 0]) begin
+                    //     reg_addr <= lsb2mem_addr;
+                    //     current_rw <= lsb2mem_store_en;
+                    //     store_or_load <= lsb2mem_store_en;
+                    //     current_addr <= lsb2mem_addr + 1;
+                    //     current_status <= 2'b01;
+                    //     current_data <= reg_lsb2mem_val[15 : 8];
+                    // end                        
+                    // else begin
+                    //     current_addr <= (lsb2mem_addr[17 : 16] == 2'b11) ? 0 : reg_addr;
+                    //     reg_addr <= lsb2mem_addr;
+                    //     current_rw <= lsb2mem_store_en;
+                    //     store_or_load <= lsb2mem_store_en;
+                    //     if (!io_fail) begin
+                    //         current_status <= 2'b00;
+                    //         current_data <= 0;
+                    //         current_rw <= 0;
+                    //         ready <= 1;
+                    //         reg_lsb2mem_en <= 0;
+                    //     end
+                    // end
                 end
                 2'b01: begin
                     current_res[7 : 0] <= mem_din;
@@ -251,5 +269,5 @@ assign mem2cache_PC = cache_finish ? reg_addr : 0;
 assign sec_inst_addr = is_c_inst ? reg_addr + 2 : 0;
 assign sec_inst_tag = sec_inst_addr[31 : 5];
 assign sec_inst_index = sec_inst_addr[4 : 1];
-assign mem_rw = lsb2mem_en ? lsb2mem_store_en : current_rw;
+
 endmodule
