@@ -90,20 +90,12 @@ reg [`VAL_WIDTH - 1 : 0] reg_val2cdb;
 reg [`LSB_ID_WIDTH - 1 : 0] reg_mem2lsb_load_id;
 reg [31 : 0] counter;
 reg reg_lsb2cdb_en;
-reg busy_head;
-reg [`VAL_WIDTH - 1 : 0] V1_head;
-reg [`VAL_WIDTH - 1 : 0] V2_head;
 reg [1 : 0] status_head;
-reg busy_tail;
 initial begin
     counter = 0;
     reg_lsb2mem_store_en = 0;
     reg_lsb2mem_load_en = 0;
-    V1_head = 0;
-    V2_head = 0;
-    busy_head = 0;
     status_head = 0;
-    busy_tail = 0;
 end
 integer i;
 integer flag;
@@ -140,10 +132,6 @@ always @(posedge clk) begin
     end
     else if (rdy_in) begin
         // issue
-        busy_head <= busy[(head == `LSB_SIZE - 1) ? 0 : head + 1];
-        busy_tail <= busy[tail];
-        V1_head <= V1[(head == `LSB_SIZE - 1) ? 0 : head + 1];
-        V2_head <= V2[(head == `LSB_SIZE - 1) ? 0 : head + 1];
         status_head <= status[(head == `LSB_SIZE - 1) ? 0 : head + 1];
         if (dec2lsb_en) begin
             tail <= tail + 1;
